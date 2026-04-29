@@ -354,6 +354,25 @@
 
   /* ── UPCOMING ── */
   .timeline{display:flex;flex-direction:column;gap:8px}
+  /* ── CAL EVENT ── */
+  .cal-event-item{font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+  .day-action-sheet{display:flex;flex-direction:column;gap:8px;padding:4px 0}
+  .day-action-btn{display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:14px;color:var(--text);width:100%;text-align:left;transition:border-color .15s}
+  .day-action-btn:hover{border-color:var(--accent)}
+  .day-action-icon{font-size:20px;width:28px;text-align:center}
+  .ev-date-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px}
+  .ev-date-chip{display:flex;align-items:center;gap:4px;background:rgba(99,102,241,.15);color:#6366f1;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500}
+  .ev-date-chip button{background:none;border:none;cursor:pointer;color:#6366f1;font-size:14px;line-height:1;padding:0 0 0 2px;opacity:.7}
+  .ev-date-chip button:hover{opacity:1}
+  .ev-date-add-btn{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text2)}
+  .ev-time-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ev-time-sel{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 8px;font-size:13px;outline:none;-webkit-appearance:none;cursor:pointer}
+  .ev-time-lbl{font-size:13px;color:var(--text2)}
+  .ev-color-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .ev-color-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .15s,transform .1s}
+  .ev-color-swatch.selected{border-color:var(--text);transform:scale(1.15)}
+  .ev-edit-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px}
+  .ev-edit-del:hover{background:rgba(239,68,68,.15);color:#ef4444}
 
   /* ── STATS PAGE ── */
   .stats-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
@@ -723,6 +742,80 @@
   </div>
 
 </div>
+</div>
+
+<!-- Day Action Sheet -->
+<div class="modal-overlay" id="dayActionModal">
+  <div class="modal" style="max-height:none">
+    <div class="modal-handle"></div>
+    <h2 id="dayActionTitle" style="margin-bottom:14px"></h2>
+    <div class="day-action-sheet">
+      <button class="day-action-btn" onclick="closeDayAction();openAddTaskWithDate(_calClickedDate)">
+        <span class="day-action-icon">✅</span>
+        <div><div style="font-weight:600">タスクを追加</div><div style="font-size:12px;color:var(--text2);margin-top:2px">締め切り日付が自動入力されます</div></div>
+      </button>
+      <button class="day-action-btn" onclick="closeDayAction();openCalEventModal(_calClickedDate)">
+        <span class="day-action-icon">📅</span>
+        <div><div style="font-weight:600">予定を追加</div><div style="font-size:12px;color:var(--text2);margin-top:2px">名前・時間・色などを設定</div></div>
+      </button>
+    </div>
+    <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeDayAction()">キャンセル</button>
+  </div>
+</div>
+
+<!-- Cal Event Modal -->
+<div class="modal-overlay" id="calEventModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="calEventModalTitle">📅 予定を追加</h2>
+    <div class="form-row">
+      <label>予定の名前 <span style="color:var(--red)">*</span></label>
+      <input id="ev_name" placeholder="予定の名前を入力">
+    </div>
+    <div class="form-row">
+      <label>日付（複数選択可）</label>
+      <div id="evDateChips" class="ev-date-chips"></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="date" id="ev_date_picker" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:13px;outline:none">
+        <button class="ev-date-add-btn" onclick="addEvDate(document.getElementById('ev_date_picker').value)">＋ 追加</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>時間（任意）</label>
+      <div class="ev-time-row">
+        <select id="ev_sh" class="ev-time-sel"></select><span class="ev-time-lbl">時</span>
+        <select id="ev_sm" class="ev-time-sel"></select><span class="ev-time-lbl">分</span>
+        <span class="ev-time-lbl">〜</span>
+        <select id="ev_eh" class="ev-time-sel"></select><span class="ev-time-lbl">時</span>
+        <select id="ev_em" class="ev-time-sel"></select><span class="ev-time-lbl">分</span>
+      </div>
+      <div style="margin-top:6px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);font-weight:400;cursor:pointer">
+          <input type="checkbox" id="ev_no_time" onchange="toggleEvTime()" style="cursor:pointer"> 時間を設定しない（終日）
+        </label>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>色</label>
+      <div class="ev-color-row" id="evColorRow"></div>
+    </div>
+    <div class="form-row">
+      <label>メモ（任意）</label>
+      <textarea id="ev_memo" placeholder="メモを入力" rows="2" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn-cancel" style="flex:1" onclick="closeCalEventModal()">キャンセル</button>
+      <button class="btn-primary" style="flex:2" onclick="saveCalEvent()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cal Event Detail Modal -->
+<div class="modal-overlay" id="calEventDetailModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="calEvDetailContent"></div>
+  </div>
 </div>
 
 <!-- Bottom Nav -->
@@ -1255,6 +1348,12 @@ let sessionCounts = sto.get('sessionCounts',{});
 let periodSettings = sto.get('periodSettings', DEFAULT_PERIOD_TIMES);
 let absLimitCount  = sto.get('absLimitCount', 5);
 let customCategories = sto.get('customCats', []);
+let calEvents = sto.get('calEvents', []);
+const EV_COLORS = ['#6366f1','#3b82f6','#22c55e','#f97316','#ef4444','#a855f7','#ec4899','#eab308','#14b8a6','#64748b'];
+let _calClickedDate = '';
+let _evDates = [];
+let _evColor = EV_COLORS[0];
+let _editEvId = null;
 
 // ── SERVICE WORKER & NOTIFICATION ──
 let swRegistration = null;
@@ -2595,13 +2694,175 @@ function renderCalendar() {
   const td=today();
   for(let d=1;d<=last.getDate();d++){
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const evts=tasks.filter(t=>t.due===ds).map(t=>`<div class="cal-event" style="background:${catBg(t.cat)};color:${catColor(t.cat)};cursor:pointer" onclick="event.stopPropagation();openTaskDetail(${t.id})">${t.name}</div>`).join('');
-    html+=`<div class="cal-day ${ds===td?'today':''}"><div class="cal-dn">${d}</div>${evts}</div>`;
+    const taskEvts=tasks.filter(t=>t.due===ds).map(t=>`<div class="cal-event" style="background:${catBg(t.cat)};color:${catColor(t.cat)}" onclick="event.stopPropagation();openTaskDetail(${t.id})">${t.name}</div>`).join('');
+    const calEvts=calEvents.filter(e=>e.dates.includes(ds)).map(e=>{
+      const timeLbl=(!e.noTime&&e.sh!=null)?` ${e.sh}:${String(e.sm).padStart(2,'0')}`:'' ;
+      return `<div class="cal-event-item" style="background:${e.color}22;color:${e.color};border-left:2px solid ${e.color}" onclick="event.stopPropagation();openCalEventDetail(${e.id})">${timeLbl?timeLbl+' ':''}${e.name}</div>`;
+    }).join('');
+    html+=`<div class="cal-day ${ds===td?'today':''}" onclick="openDayAction('${ds}')"><div class="cal-dn">${d}</div>${taskEvts}${calEvts}</div>`;
   }
   const rem=Math.ceil((startDow+last.getDate())/7)*7-(startDow+last.getDate());
   for(let i=0;i<rem;i++)html+=`<div class="cal-day other-month"></div>`;
   document.getElementById('calGrid').innerHTML=html;
 }
+// ── DAY ACTION ──
+function openDayAction(ds) {
+  _calClickedDate = ds;
+  const d = new Date(ds+'T00:00:00');
+  const dow = ['日','月','火','水','木','金','土'][d.getDay()];
+  const m = d.getMonth()+1, day = d.getDate();
+  document.getElementById('dayActionTitle').textContent = `${d.getFullYear()}年${m}月${day}日（${dow}）`;
+  document.getElementById('dayActionModal').classList.add('show');
+}
+function closeDayAction() {
+  document.getElementById('dayActionModal').classList.remove('show');
+}
+
+// ── TASK with date ──
+function openAddTaskWithDate(ds) {
+  openAddTask();
+  const el = document.getElementById('t_due');
+  if (el && ds) el.value = ds;
+}
+
+// ── CAL EVENT MODAL ──
+function buildEvTimeSels() {
+  const hSel = id => {
+    const s = document.getElementById(id);
+    if (!s || s.options.length) return;
+    for (let h=0;h<24;h++) s.add(new Option(String(h).padStart(2,'0'), h));
+  };
+  const mSel = id => {
+    const s = document.getElementById(id);
+    if (!s || s.options.length) return;
+    for (let m=0;m<60;m+=5) s.add(new Option(String(m).padStart(2,'0'), m));
+  };
+  hSel('ev_sh'); mSel('ev_sm'); hSel('ev_eh'); mSel('ev_em');
+}
+function buildEvColorRow(selected) {
+  _evColor = selected || EV_COLORS[0];
+  document.getElementById('evColorRow').innerHTML = EV_COLORS.map(c =>
+    `<div class="ev-color-swatch${c===_evColor?' selected':''}" style="background:${c}" onclick="selectEvColor('${c}')"></div>`
+  ).join('');
+}
+function selectEvColor(c) {
+  _evColor = c;
+  document.querySelectorAll('.ev-color-swatch').forEach(s => s.classList.toggle('selected', s.style.background===c || s.style.backgroundColor===c));
+}
+function renderEvDateChips() {
+  document.getElementById('evDateChips').innerHTML = _evDates.map(d => {
+    const dt = new Date(d+'T00:00:00');
+    const lbl = `${dt.getMonth()+1}/${dt.getDate()}`;
+    return `<span class="ev-date-chip">${lbl}<button onclick="removeEvDate('${d}')" title="削除">×</button></span>`;
+  }).join('') + (_evDates.length===0?'<span style="font-size:12px;color:var(--text2)">日付を追加してください</span>':'');
+}
+function addEvDate(ds) {
+  if (!ds) return;
+  if (!_evDates.includes(ds)) { _evDates.push(ds); _evDates.sort(); renderEvDateChips(); }
+}
+function removeEvDate(ds) {
+  _evDates = _evDates.filter(d=>d!==ds);
+  renderEvDateChips();
+}
+function toggleEvTime() {
+  const off = document.getElementById('ev_no_time').checked;
+  ['ev_sh','ev_sm','ev_eh','ev_em'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = off;
+  });
+}
+function openCalEventModal(defaultDate, editId) {
+  buildEvTimeSels();
+  _editEvId = editId || null;
+  document.getElementById('calEventModalTitle').textContent = editId ? '📅 予定を編集' : '📅 予定を追加';
+  if (editId) {
+    const ev = calEvents.find(e=>e.id===editId);
+    if (!ev) return;
+    document.getElementById('ev_name').value = ev.name;
+    document.getElementById('ev_memo').value = ev.memo || '';
+    _evDates = [...ev.dates];
+    document.getElementById('ev_no_time').checked = !!ev.noTime;
+    if (!ev.noTime && ev.sh!=null) {
+      document.getElementById('ev_sh').value = ev.sh;
+      document.getElementById('ev_sm').value = ev.sm;
+      document.getElementById('ev_eh').value = ev.eh;
+      document.getElementById('ev_em').value = ev.em;
+    }
+    buildEvColorRow(ev.color);
+  } else {
+    document.getElementById('ev_name').value = '';
+    document.getElementById('ev_memo').value = '';
+    _evDates = defaultDate ? [defaultDate] : [];
+    document.getElementById('ev_no_time').checked = false;
+    document.getElementById('ev_sh').value = 9;
+    document.getElementById('ev_sm').value = 0;
+    document.getElementById('ev_eh').value = 10;
+    document.getElementById('ev_em').value = 0;
+    buildEvColorRow();
+  }
+  document.getElementById('ev_date_picker').value = defaultDate || '';
+  toggleEvTime();
+  renderEvDateChips();
+  document.getElementById('calEventModal').classList.add('show');
+}
+function closeCalEventModal() {
+  document.getElementById('calEventModal').classList.remove('show');
+}
+function saveCalEvent() {
+  const name = document.getElementById('ev_name').value.trim();
+  if (!name) { alert('予定の名前を入力してください'); return; }
+  if (!_evDates.length) { alert('日付を1つ以上追加してください'); return; }
+  const noTime = document.getElementById('ev_no_time').checked;
+  const ev = {
+    id: _editEvId || Date.now(),
+    name,
+    dates: _evDates,
+    memo: document.getElementById('ev_memo').value.trim(),
+    color: _evColor,
+    noTime,
+    sh: noTime ? null : parseInt(document.getElementById('ev_sh').value),
+    sm: noTime ? null : parseInt(document.getElementById('ev_sm').value),
+    eh: noTime ? null : parseInt(document.getElementById('ev_eh').value),
+    em: noTime ? null : parseInt(document.getElementById('ev_em').value),
+  };
+  if (_editEvId) {
+    const idx = calEvents.findIndex(e=>e.id===_editEvId);
+    if (idx>=0) calEvents[idx]=ev;
+  } else {
+    calEvents.push(ev);
+  }
+  sto.set('calEvents', calEvents);
+  closeCalEventModal();
+  renderCalendar();
+}
+function deleteCalEvent(id) {
+  if (!confirm('この予定を削除しますか？')) return;
+  calEvents = calEvents.filter(e=>e.id!==id);
+  sto.set('calEvents', calEvents);
+  document.getElementById('calEventDetailModal')?.classList.remove('show');
+  renderCalendar();
+}
+function openCalEventDetail(id) {
+  const ev = calEvents.find(e=>e.id===id);
+  if (!ev) return;
+  const dateStr = ev.dates.map(d=>{ const dt=new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; }).join('、');
+  const timeStr = ev.noTime ? '終日' : `${String(ev.sh).padStart(2,'0')}:${String(ev.sm).padStart(2,'0')} 〜 ${String(ev.eh).padStart(2,'0')}:${String(ev.em).padStart(2,'0')}`;
+  document.getElementById('calEvDetailContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="width:14px;height:14px;border-radius:50%;background:${ev.color};flex-shrink:0;display:inline-block"></span>
+      <span style="font-size:17px;font-weight:700">${ev.name}</span>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:6px">📅 ${dateStr}</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:${ev.memo?'6px':'0'}">🕐 ${timeStr}</div>
+    ${ev.memo?`<div style="font-size:13px;background:var(--surface2);border-radius:8px;padding:10px;margin-top:8px">${ev.memo}</div>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-cancel" style="flex:1" onclick="document.getElementById('calEventDetailModal').classList.remove('show')">閉じる</button>
+      <button class="ev-edit-del" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px" onclick="document.getElementById('calEventDetailModal').classList.remove('show');openCalEventModal(null,${ev.id})">🖊️ 編集</button>
+      <button class="ev-edit-del" style="flex:1;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:8px" onclick="deleteCalEvent(${ev.id})">🗑 削除</button>
+    </div>`;
+  document.getElementById('calEventDetailModal').classList.add('show');
+}
+
 function changeMonth(dir){
   calMonth+=dir;
   if(calMonth<0){calMonth=11;calYear--;}

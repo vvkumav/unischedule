@@ -360,14 +360,37 @@
   .day-action-btn{display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:14px;color:var(--text);width:100%;text-align:left;transition:border-color .15s}
   .day-action-btn:hover{border-color:var(--accent)}
   .day-action-icon{font-size:20px;width:28px;text-align:center}
-  .ev-date-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px}
-  .ev-date-chip{display:flex;align-items:center;gap:4px;background:rgba(99,102,241,.15);color:#6366f1;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500}
-  .ev-date-chip button{background:none;border:none;cursor:pointer;color:#6366f1;font-size:14px;line-height:1;padding:0 0 0 2px;opacity:.7}
-  .ev-date-chip button:hover{opacity:1}
-  .ev-date-add-btn{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text2)}
-  .ev-time-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .ev-time-sel{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 8px;font-size:13px;outline:none;-webkit-appearance:none;cursor:pointer}
-  .ev-time-lbl{font-size:13px;color:var(--text2)}
+  /* ── EV DATE PICKER ── */
+  .ev-minical{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:8px}
+  .ev-minical-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .ev-minical-nav button{background:none;border:none;color:var(--text);cursor:pointer;font-size:17px;padding:2px 8px;border-radius:6px}
+  .ev-minical-nav button:hover{background:var(--border)}
+  .ev-minical-lbl{font-size:13px;font-weight:700;color:var(--text)}
+  .ev-mcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .ev-mcal-dow{font-size:9px;color:var(--text2);text-align:center;font-weight:600;padding:3px 0}
+  .ev-mcal-day{width:100%;aspect-ratio:1;border:none;background:none;color:var(--text);border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s;font-family:inherit}
+  .ev-mcal-day:hover:not(:disabled){background:var(--border)}
+  .ev-mcal-day.ev-sel{background:var(--accent)!important;color:#fff;font-weight:700}
+  .ev-mcal-day.ev-today{color:var(--accent);font-weight:700}
+  .ev-mcal-day.ev-today.ev-sel{color:#fff}
+  .ev-mcal-day:disabled{opacity:.25;pointer-events:none}
+  .ev-date-chips{display:flex;flex-wrap:wrap;gap:5px;min-height:24px}
+  .ev-date-chip{display:flex;align-items:center;gap:3px;background:rgba(99,102,241,.15);color:#6366f1;border-radius:20px;padding:3px 8px 3px 10px;font-size:11px;font-weight:500}
+  .ev-date-chip-del{background:none;border:none;cursor:pointer;color:#6366f1;font-size:14px;line-height:1;padding:0;opacity:.6}
+  .ev-date-chip-del:hover{opacity:1}
+  .ev-chips-empty{font-size:11px;color:var(--text2);padding:2px 0}
+  /* ── EV TIME PICKER ── */
+  .ev-allday-btn{width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:8px;transition:all .15s}
+  .ev-allday-btn.active{background:rgba(99,102,241,.12);color:#6366f1;border-color:#6366f1}
+  .ev-allday-icon{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px}
+  .ev-time-cards{display:flex;align-items:center;gap:8px;transition:opacity .2s}
+  .ev-time-cards.disabled{opacity:.3;pointer-events:none}
+  .ev-time-card{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center}
+  .ev-time-card-lbl{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .ev-time-card-inner{display:flex;align-items:center;justify-content:center;gap:2px}
+  .ev-time-big-sel{background:transparent;border:none;color:var(--text);font-size:20px;font-weight:700;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;width:44px;padding:0;font-family:inherit}
+  .ev-time-colon{font-size:20px;font-weight:700;color:var(--text);line-height:1}
+  .ev-time-sep{font-size:18px;color:var(--text2);flex-shrink:0;font-weight:300}
   .ev-color-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
   .ev-color-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .15s,transform .1s}
   .ev-color-swatch.selected{border-color:var(--text);transform:scale(1.15)}
@@ -768,41 +791,70 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <h2 id="calEventModalTitle">📅 予定を追加</h2>
+
+    <!-- 名前 -->
     <div class="form-row">
       <label>予定の名前 <span style="color:var(--red)">*</span></label>
-      <input id="ev_name" placeholder="予定の名前を入力">
+      <input id="ev_name" placeholder="例：友達と集まり、アルバイト">
     </div>
+
+    <!-- 日付：ミニカレンダー -->
     <div class="form-row">
-      <label>日付（複数選択可）</label>
+      <label style="margin-bottom:6px">日付<span style="font-size:11px;color:var(--text2);font-weight:400;margin-left:6px">タップで複数選択できます</span></label>
+      <div class="ev-minical">
+        <div class="ev-minical-nav">
+          <button onclick="evCalMove(-1)">‹</button>
+          <span id="evCalLbl" class="ev-minical-lbl"></span>
+          <button onclick="evCalMove(1)">›</button>
+        </div>
+        <div class="ev-mcal-grid" id="evMiniCalGrid"></div>
+      </div>
+      <div style="margin-bottom:4px;font-size:11px;color:var(--text2)">選択中の日付</div>
       <div id="evDateChips" class="ev-date-chips"></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <input type="date" id="ev_date_picker" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:13px;outline:none">
-        <button class="ev-date-add-btn" onclick="addEvDate(document.getElementById('ev_date_picker').value)">＋ 追加</button>
-      </div>
     </div>
+
+    <!-- 時間 -->
     <div class="form-row">
-      <label>時間（任意）</label>
-      <div class="ev-time-row">
-        <select id="ev_sh" class="ev-time-sel"></select><span class="ev-time-lbl">時</span>
-        <select id="ev_sm" class="ev-time-sel"></select><span class="ev-time-lbl">分</span>
-        <span class="ev-time-lbl">〜</span>
-        <select id="ev_eh" class="ev-time-sel"></select><span class="ev-time-lbl">時</span>
-        <select id="ev_em" class="ev-time-sel"></select><span class="ev-time-lbl">分</span>
-      </div>
-      <div style="margin-top:6px">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);font-weight:400;cursor:pointer">
-          <input type="checkbox" id="ev_no_time" onchange="toggleEvTime()" style="cursor:pointer"> 時間を設定しない（終日）
-        </label>
+      <label style="margin-bottom:6px">時間</label>
+      <!-- 終日トグル -->
+      <button id="evAlldayBtn" class="ev-allday-btn" onclick="toggleEvTime()">
+        <span class="ev-allday-icon" id="evAlldayIcon"></span>
+        終日（時間を設定しない）
+      </button>
+      <!-- 時間カード -->
+      <div class="ev-time-cards" id="evTimeCards">
+        <div class="ev-time-card">
+          <div class="ev-time-card-lbl">開始</div>
+          <div class="ev-time-card-inner">
+            <select id="ev_sh" class="ev-time-big-sel"></select>
+            <span class="ev-time-colon">:</span>
+            <select id="ev_sm" class="ev-time-big-sel"></select>
+          </div>
+        </div>
+        <span class="ev-time-sep">→</span>
+        <div class="ev-time-card">
+          <div class="ev-time-card-lbl">終了</div>
+          <div class="ev-time-card-inner">
+            <select id="ev_eh" class="ev-time-big-sel"></select>
+            <span class="ev-time-colon">:</span>
+            <select id="ev_em" class="ev-time-big-sel"></select>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- 色 -->
     <div class="form-row">
       <label>色</label>
       <div class="ev-color-row" id="evColorRow"></div>
     </div>
+
+    <!-- メモ -->
     <div class="form-row">
       <label>メモ（任意）</label>
       <textarea id="ev_memo" placeholder="メモを入力" rows="2" style="resize:vertical"></textarea>
     </div>
+
     <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn-cancel" style="flex:1" onclick="closeCalEventModal()">キャンセル</button>
       <button class="btn-primary" style="flex:2" onclick="saveCalEvent()">保存</button>
@@ -2726,6 +2778,8 @@ function openAddTaskWithDate(ds) {
 }
 
 // ── CAL EVENT MODAL ──
+let _evCalYear, _evCalMonth;
+
 function buildEvTimeSels() {
   const hSel = id => {
     const s = document.getElementById(id);
@@ -2739,6 +2793,7 @@ function buildEvTimeSels() {
   };
   hSel('ev_sh'); mSel('ev_sm'); hSel('ev_eh'); mSel('ev_em');
 }
+
 function buildEvColorRow(selected) {
   _evColor = selected || EV_COLORS[0];
   document.getElementById('evColorRow').innerHTML = EV_COLORS.map(c =>
@@ -2747,42 +2802,105 @@ function buildEvColorRow(selected) {
 }
 function selectEvColor(c) {
   _evColor = c;
-  document.querySelectorAll('.ev-color-swatch').forEach(s => s.classList.toggle('selected', s.style.background===c || s.style.backgroundColor===c));
+  document.querySelectorAll('.ev-color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.style.background===c || s.style.backgroundColor===c);
+  });
 }
-function renderEvDateChips() {
-  document.getElementById('evDateChips').innerHTML = _evDates.map(d => {
-    const dt = new Date(d+'T00:00:00');
-    const lbl = `${dt.getMonth()+1}/${dt.getDate()}`;
-    return `<span class="ev-date-chip">${lbl}<button onclick="removeEvDate('${d}')" title="削除">×</button></span>`;
-  }).join('') + (_evDates.length===0?'<span style="font-size:12px;color:var(--text2)">日付を追加してください</span>':'');
+
+// ── ミニカレンダー ──
+function evCalMove(dir) {
+  _evCalMonth += dir;
+  if (_evCalMonth < 0)  { _evCalMonth = 11; _evCalYear--; }
+  if (_evCalMonth > 11) { _evCalMonth = 0;  _evCalYear++; }
+  renderEvMiniCal();
 }
-function addEvDate(ds) {
-  if (!ds) return;
-  if (!_evDates.includes(ds)) { _evDates.push(ds); _evDates.sort(); renderEvDateChips(); }
+function renderEvMiniCal() {
+  const lbl = document.getElementById('evCalLbl');
+  if (lbl) lbl.textContent = `${_evCalYear}年 ${_evCalMonth+1}月`;
+  const grid = document.getElementById('evMiniCalGrid');
+  if (!grid) return;
+  const first = new Date(_evCalYear, _evCalMonth, 1);
+  const last  = new Date(_evCalYear, _evCalMonth+1, 0);
+  const startDow = (first.getDay()+6)%7; // 月曜始まり
+  const td = today();
+  let html = ['月','火','水','木','金','土','日'].map(d=>`<div class="ev-mcal-dow">${d}</div>`).join('');
+  for (let i=0;i<startDow;i++) html+=`<div></div>`;
+  for (let d=1;d<=last.getDate();d++) {
+    const ds=`${_evCalYear}-${String(_evCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const sel = _evDates.includes(ds);
+    const isTd = ds===td;
+    html+=`<button class="ev-mcal-day${sel?' ev-sel':''}${isTd?' ev-today':''}" onclick="toggleEvDate('${ds}')">${d}</button>`;
+  }
+  grid.innerHTML = html;
+}
+function toggleEvDate(ds) {
+  if (_evDates.includes(ds)) {
+    _evDates = _evDates.filter(d=>d!==ds);
+  } else {
+    _evDates.push(ds); _evDates.sort();
+  }
+  renderEvMiniCal();
+  renderEvDateChips();
 }
 function removeEvDate(ds) {
   _evDates = _evDates.filter(d=>d!==ds);
+  renderEvMiniCal();
   renderEvDateChips();
 }
+function addEvDate(ds) {
+  if (!ds || _evDates.includes(ds)) return;
+  _evDates.push(ds); _evDates.sort();
+  renderEvMiniCal();
+  renderEvDateChips();
+}
+function renderEvDateChips() {
+  const el = document.getElementById('evDateChips');
+  if (!el) return;
+  if (!_evDates.length) {
+    el.innerHTML = '<span class="ev-chips-empty">カレンダーの日付をタップして追加</span>';
+    return;
+  }
+  el.innerHTML = _evDates.map(d => {
+    const dt = new Date(d+'T00:00:00');
+    const dow = ['日','月','火','水','木','金','土'][dt.getDay()];
+    const lbl = `${dt.getMonth()+1}/${dt.getDate()}(${dow})`;
+    return `<span class="ev-date-chip">${lbl}<button class="ev-date-chip-del" onclick="removeEvDate('${d}')" title="削除">×</button></span>`;
+  }).join('');
+}
+
+// ── 終日トグル ──
 function toggleEvTime() {
-  const off = document.getElementById('ev_no_time').checked;
-  ['ev_sh','ev_sm','ev_eh','ev_em'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.disabled = off;
-  });
+  const btn  = document.getElementById('evAlldayBtn');
+  const icon = document.getElementById('evAlldayIcon');
+  const cards = document.getElementById('evTimeCards');
+  const isAllday = btn.classList.toggle('active');
+  icon.textContent = isAllday ? '✓' : '';
+  if (cards) cards.classList.toggle('disabled', isAllday);
 }
 function openCalEventModal(defaultDate, editId) {
   buildEvTimeSels();
   _editEvId = editId || null;
   document.getElementById('calEventModalTitle').textContent = editId ? '📅 予定を編集' : '📅 予定を追加';
+
+  // ミニカレンダー初期化（タップした日付の月を表示）
+  const refDate = defaultDate ? new Date(defaultDate+'T00:00:00') : new Date();
+  _evCalYear  = refDate.getFullYear();
+  _evCalMonth = refDate.getMonth();
+
   if (editId) {
     const ev = calEvents.find(e=>e.id===editId);
     if (!ev) return;
     document.getElementById('ev_name').value = ev.name;
     document.getElementById('ev_memo').value = ev.memo || '';
     _evDates = [...ev.dates];
-    document.getElementById('ev_no_time').checked = !!ev.noTime;
-    if (!ev.noTime && ev.sh!=null) {
+    const isAllday = !!ev.noTime;
+    const btn   = document.getElementById('evAlldayBtn');
+    const icon  = document.getElementById('evAlldayIcon');
+    const cards = document.getElementById('evTimeCards');
+    btn.classList.toggle('active', isAllday);
+    icon.textContent = isAllday ? '✓' : '';
+    if (cards) cards.classList.toggle('disabled', isAllday);
+    if (!isAllday && ev.sh!=null) {
       document.getElementById('ev_sh').value = ev.sh;
       document.getElementById('ev_sm').value = ev.sm;
       document.getElementById('ev_eh').value = ev.eh;
@@ -2793,15 +2911,19 @@ function openCalEventModal(defaultDate, editId) {
     document.getElementById('ev_name').value = '';
     document.getElementById('ev_memo').value = '';
     _evDates = defaultDate ? [defaultDate] : [];
-    document.getElementById('ev_no_time').checked = false;
+    const btn   = document.getElementById('evAlldayBtn');
+    const icon  = document.getElementById('evAlldayIcon');
+    const cards = document.getElementById('evTimeCards');
+    btn.classList.remove('active');
+    icon.textContent = '';
+    if (cards) cards.classList.remove('disabled');
     document.getElementById('ev_sh').value = 9;
     document.getElementById('ev_sm').value = 0;
     document.getElementById('ev_eh').value = 10;
     document.getElementById('ev_em').value = 0;
     buildEvColorRow();
   }
-  document.getElementById('ev_date_picker').value = defaultDate || '';
-  toggleEvTime();
+  renderEvMiniCal();
   renderEvDateChips();
   document.getElementById('calEventModal').classList.add('show');
 }
@@ -2812,7 +2934,7 @@ function saveCalEvent() {
   const name = document.getElementById('ev_name').value.trim();
   if (!name) { alert('予定の名前を入力してください'); return; }
   if (!_evDates.length) { alert('日付を1つ以上追加してください'); return; }
-  const noTime = document.getElementById('ev_no_time').checked;
+  const noTime = document.getElementById('evAlldayBtn').classList.contains('active');
   const ev = {
     id: _editEvId || Date.now(),
     name,

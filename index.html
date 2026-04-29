@@ -804,7 +804,11 @@
     <!-- 名前 -->
     <div class="form-row">
       <label>予定の名前 <span style="color:var(--red)">*</span></label>
-      <input id="ev_name" placeholder="例：友達と集まり、アルバイト">
+      <div class="name-suggest-wrap">
+        <input id="ev_name" placeholder="例：友達と集まり、アルバイト" autocomplete="off"
+          oninput="showEvNameSuggest()" onfocus="showEvNameSuggest()" onblur="hideEvNameSuggestDelayed()">
+        <div class="name-suggest-list" id="evNameSuggestList"></div>
+      </div>
     </div>
 
     <!-- 日付：ミニカレンダー -->
@@ -2942,6 +2946,57 @@ function openCalEventModal(defaultDate, editId) {
 }
 function closeCalEventModal() {
   document.getElementById('calEventModal').classList.remove('show');
+  hideEvNameSuggest();
+}
+
+// ── 予定名サジェスト ──────────────────────────────────
+let _evSuggestBlurTimer = null;
+
+function showEvNameSuggest() {
+  const inp = document.getElementById('ev_name');
+  const list = document.getElementById('evNameSuggestList');
+  if (!inp || !list) return;
+  const q = inp.value.toLowerCase().trim();
+  // 過去の予定名をユニーク化して取得
+  const seen = new Set();
+  const hits = [];
+  calEvents.forEach(e => {
+    if (e.name && !seen.has(e.name) && (!q || e.name.toLowerCase().includes(q))) {
+      seen.add(e.name);
+      hits.push(e);
+    }
+  });
+  if (!hits.length) { list.classList.remove('show'); return; }
+  list.innerHTML = hits.map((e, i) =>
+    `<div class="name-suggest-item" data-evsi="${i}" onmousedown="_pickEvSuggest(this)" ontouchstart="_pickEvSuggest(this)">
+      <div class="name-suggest-dot" style="background:${e.color||'#6366f1'}"></div>
+      <span class="name-suggest-label">${e.name.replace(/</g,'&lt;')}</span>
+    </div>`
+  ).join('');
+  // stash names for retrieval
+  list._evSuggestNames = hits.map(e => e.name);
+  list.classList.add('show');
+}
+
+function hideEvNameSuggest() {
+  const list = document.getElementById('evNameSuggestList');
+  if (list) list.classList.remove('show');
+}
+
+function hideEvNameSuggestDelayed() {
+  _evSuggestBlurTimer = setTimeout(hideEvNameSuggest, 180);
+}
+
+function _pickEvSuggest(el) {
+  if (_evSuggestBlurTimer) { clearTimeout(_evSuggestBlurTimer); _evSuggestBlurTimer = null; }
+  const list = document.getElementById('evNameSuggestList');
+  const idx = parseInt(el.dataset.evsi);
+  const name = list._evSuggestNames?.[idx];
+  if (name != null) {
+    const inp = document.getElementById('ev_name');
+    if (inp) inp.value = name;
+  }
+  hideEvNameSuggest();
 }
 function saveCalEvent() {
   const name = document.getElementById('ev_name').value.trim();

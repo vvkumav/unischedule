@@ -463,6 +463,15 @@
   .form-row{margin-bottom:13px}
   .form-row label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
   .form-row input,.form-row select,.form-row textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+  .name-suggest-wrap{position:relative}
+  .name-suggest-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;overflow:hidden;margin-top:4px;display:none}
+  .name-suggest-list.show{display:block}
+  .name-suggest-item{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;font-size:14px;transition:background .1s;border-bottom:1px solid var(--border)}
+  .name-suggest-item:last-child{border-bottom:none}
+  .name-suggest-item:hover,.name-suggest-item:active{background:var(--surface2)}
+  .name-suggest-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .name-suggest-label{font-weight:600;color:var(--text)}
+  .name-suggest-sub{font-size:11px;color:var(--text2);margin-left:auto}
   .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--accent)}
   .form-row select option{background:var(--surface2)}
   .form-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -887,7 +896,11 @@
     <h2 id="taskModalTitle">タスク追加</h2>
     <div class="form-row">
       <label>タスク名 *</label>
-      <input type="text" id="t_name" placeholder="例: 統計学レポート提出">
+      <div class="name-suggest-wrap">
+        <input type="text" id="t_name" placeholder="例: 統計学レポート提出" autocomplete="off"
+          oninput="showNameSuggest()" onfocus="showNameSuggest()" onblur="hideNameSuggestDelayed()">
+        <div class="name-suggest-list" id="nameSuggestList"></div>
+      </div>
     </div>
     <div class="form-cols">
       <div class="form-row">
@@ -3186,7 +3199,62 @@ function openAddTaskForClass(classId) {
   // 手入力行を非表示
   ['t_subj_row','t_subj2_row'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 }
-function closeTaskModal(){document.getElementById('taskModal').classList.remove('show')}
+// ── タスク名サジェスト ──────────────────────────────────
+let _suggestBlurTimer = null;
+
+function showNameSuggest() {
+  const inp = document.getElementById('t_name');
+  const list = document.getElementById('nameSuggestList');
+  if (!inp || !list) return;
+  const q = inp.value.toLowerCase().trim();
+  // 授業名の一覧をフィルタ
+  // 現在の学期の授業のみ対象（学期フィルタがあれば）
+  const { year: curY, term: curT } = getSelectedSemester();
+  const semClasses = classes.filter(c => c.name && (isNaN(curY) || (c.year===curY && c.term===curT)));
+  // 重複名を除去してユニーク授業名リストを作成
+  const seen = new Set();
+  const uniq = [];
+  semClasses.forEach(c => { if (!seen.has(c.id)) { seen.add(c.id); uniq.push(c); } });
+  const hits = uniq.filter(c => !q || c.name.toLowerCase().includes(q));
+  if (!hits.length) { list.classList.remove('show'); return; }
+  list.innerHTML = hits.map(c => {
+    // 曜日・時限情報をサブラベルに
+    const dayNames = ['月','火','水','木','金','土','日'];
+    const sub = (c.day!=null && c.period!=null) ? `${dayNames[c.day]}曜${c.period+1}限` : '';
+    return `<div class="name-suggest-item" onmousedown="selectNameSuggest(${c.id})" ontouchstart="selectNameSuggest(${c.id})">
+      <div class="name-suggest-dot" style="background:${c.color||'#94a3b8'}"></div>
+      <span class="name-suggest-label">${c.name}</span>
+      ${sub ? `<span class="name-suggest-sub">${sub}</span>` : ''}
+    </div>`;
+  }).join('');
+  list.classList.add('show');
+}
+
+function hideNameSuggest() {
+  const list = document.getElementById('nameSuggestList');
+  if (list) list.classList.remove('show');
+}
+
+function hideNameSuggestDelayed() {
+  _suggestBlurTimer = setTimeout(hideNameSuggest, 180);
+}
+
+function selectNameSuggest(classId) {
+  if (_suggestBlurTimer) { clearTimeout(_suggestBlurTimer); _suggestBlurTimer = null; }
+  const cls = classes.find(c => c.id === classId);
+  if (!cls) return;
+  // タスク名に授業名をセット
+  const inp = document.getElementById('t_name');
+  if (inp) inp.value = cls.name;
+  // 授業リンクも自動セット（通常・繰り返し両方）
+  const sel1 = document.getElementById('t_classLink');
+  if (sel1) { sel1.value = classId; onClassLinkChange('normal'); }
+  const sel2 = document.getElementById('t_classLink2');
+  if (sel2) { sel2.value = classId; onClassLinkChange('recur'); }
+  hideNameSuggest();
+}
+
+function closeTaskModal(){document.getElementById('taskModal').classList.remove('show');hideNameSuggest();}
 
 function saveTask() {
   const name=document.getElementById('t_name').value.trim();

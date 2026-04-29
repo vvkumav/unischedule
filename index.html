@@ -269,6 +269,14 @@
   /* ── TASKS ── */
   .task-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
   .task-toolbar select{flex:1;min-width:100px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;-webkit-appearance:none}
+  .task-search-wrap{position:relative;flex-basis:100%;width:100%}
+  .task-search-wrap::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none}
+  .task-search-input{width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px 8px 34px;font-size:13px;outline:none;transition:border-color .15s}
+  .task-search-input:focus{border-color:var(--accent)}
+  .task-search-input::placeholder{color:var(--text2)}
+  .task-search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:4px;display:none}
+  .task-search-clear.visible{display:block}
+  .search-highlight{background:rgba(99,102,241,.25);border-radius:2px;font-weight:600}
   .task-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px}
   .task-col{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
   .task-col-title{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:7px}
@@ -632,12 +640,23 @@
   <div class="page" id="page-tasks">
     <div class="page-title"><span class="icon">📋</span>タスク・課題</div>
     <div class="task-toolbar">
+      <div class="task-search-wrap">
+        <input type="text" id="taskSearch" class="task-search-input" placeholder="タスク名・授業名・メモで絞り込み" oninput="renderTasks();updateSearchClear()">
+        <button class="task-search-clear" id="taskSearchClear" onclick="clearTaskSearch()" title="クリア">✕</button>
+      </div>
       <select id="taskFilter" onchange="renderTasks()">
         <option value="">すべてのカテゴリ</option>
         <option>授業</option><option>課題</option><option>試験</option><option>サークル</option><option>その他</option>
       </select>
       <select id="statusFilter" onchange="renderTasks()">
         <option value="">すべて</option><option value="pending">未完了</option><option value="done">完了</option>
+      </select>
+      <select id="sortFilter" onchange="renderTasks()">
+        <option value="due">期限日順</option>
+        <option value="created_new">追加日（新しい順）</option>
+        <option value="created_old">追加日（古い順）</option>
+        <option value="related">関連授業順</option>
+        <option value="name">名前順</option>
       </select>
       <button class="add-btn" onclick="openAddTask()">＋</button>
     </div>
@@ -1387,7 +1406,7 @@ function showPage(name, el) {
   try {
     if (name==='dashboard') renderDashboard();
     if (name==='timetable') { renderTimetable(); if(currentTTTab==='att') renderAttendance(); }
-    if (name==='tasks') renderTasks();
+    if (name==='tasks') { refreshTaskFilterSelect(); renderTasks(); }
     if (name==='stats') renderStats();
     if (name==='calendar') renderCalendar();
     if (name==='upcoming') renderUpcoming();
@@ -2141,34 +2160,94 @@ function deleteGrade(id) {
 
 // ── TASKS ──
 function renderTasks() {
-  const catF = document.getElementById('taskFilter').value;
-  const statF = document.getElementById('statusFilter').value;
+  const catF    = document.getElementById('taskFilter').value;
+  const statF   = document.getElementById('statusFilter').value;
+  const sortF   = document.getElementById('sortFilter')?.value || 'due';
+  const rawSearch = document.getElementById('taskSearch')?.value || '';
+  const searchF = rawSearch.toLowerCase().trim();
 
+  // テキスト検索マッチ判定
+  const matchSearch = item =>
+    !searchF ||
+    (item.name||'').toLowerCase().includes(searchF) ||
+    (item.subj||'').toLowerCase().includes(searchF) ||
+    (item.note||'').toLowerCase().includes(searchF);
+
+  // ソート
+  const sortItems = arr => {
+    const a = [...arr];
+    if (sortF==='due')          return a.sort((x,y)=>(x.due||'9999')>(y.due||'9999')?1:-1);
+    if (sortF==='created_new')  return a.sort((x,y)=>y.id-x.id);
+    if (sortF==='created_old')  return a.sort((x,y)=>x.id-y.id);
+    if (sortF==='related')      return a.sort((x,y)=>(x.subj||'').localeCompare(y.subj||'','ja'));
+    if (sortF==='name')         return a.sort((x,y)=>(x.name||'').localeCompare(y.name||'','ja'));
+    return a;
+  };
+
+  // 繰り返しタスク
   const rs = document.getElementById('recurringSection');
   let rtFiltered = recurringTasks;
   if (catF) rtFiltered = rtFiltered.filter(rt=>rt.cat===catF);
-  if (statF==='done') rtFiltered = rtFiltered.filter(isCompletedNow);
+  if (statF==='done')    rtFiltered = rtFiltered.filter(isCompletedNow);
   if (statF==='pending') rtFiltered = rtFiltered.filter(rt=>!isCompletedNow(rt));
+  if (searchF)           rtFiltered = rtFiltered.filter(matchSearch);
+  if (sortF==='related') rtFiltered = [...rtFiltered].sort((x,y)=>(x.subj||'').localeCompare(y.subj||'','ja'));
+  else if (sortF==='name') rtFiltered = [...rtFiltered].sort((x,y)=>(x.name||'').localeCompare(y.name||'','ja'));
+  else if (sortF==='created_new') rtFiltered = [...rtFiltered].sort((x,y)=>y.id-x.id);
+  else if (sortF==='created_old') rtFiltered = [...rtFiltered].sort((x,y)=>x.id-y.id);
 
   rs.innerHTML = rtFiltered.length ? `
     <div class="rt-section">
       <div class="rt-section-title"><span>🔁</span> 繰り返しタスク</div>
-      ${rtFiltered.map(rtHTML).join('')}
+      ${rtFiltered.map(rt=>rtHTML(rt,searchF)).join('')}
     </div>` : '';
 
+  // 通常タスク
   let filtered = catF ? tasks.filter(t=>t.cat===catF) : tasks;
+  if (searchF) filtered = filtered.filter(matchSearch);
   const pending = filtered.filter(t=>!t.done&&statF!=='done');
   const done    = filtered.filter(t=>t.done&&statF!=='pending');
 
-  document.getElementById('pendingTasks').innerHTML = pending.length
-    ? pending.sort((a,b)=>(a.due||'9')>(b.due||'9')?1:-1).map(taskHTML).join('')
+  const emptyPending = searchF
+    ? `<div class="empty-state"><div class="es-icon">🔍</div>「${rawSearch}」に一致するタスクなし</div>`
     : '<div class="empty-state"><div class="es-icon">🎉</div>未完了タスクなし</div>';
-  document.getElementById('doneTasks').innerHTML = done.length
-    ? done.map(taskHTML).join('')
+  const emptyDone = searchF
+    ? `<div class="empty-state"><div class="es-icon">🔍</div>「${rawSearch}」に一致するタスクなし</div>`
     : '<div class="empty-state"><div class="es-icon">📭</div>完了タスクなし</div>';
+
+  document.getElementById('pendingTasks').innerHTML = pending.length
+    ? sortItems(pending).map(t=>taskHTML(t,searchF)).join('')
+    : emptyPending;
+  document.getElementById('doneTasks').innerHTML = done.length
+    ? sortItems(done).map(t=>taskHTML(t,searchF)).join('')
+    : emptyDone;
+}
+function refreshTaskFilterSelect() {
+  const sel = document.getElementById('taskFilter');
+  if (!sel) return;
+  const cur = sel.value;
+  const builtIn = ['授業','課題','試験','サークル','その他'];
+  const all = [...builtIn, ...customCategories.map(c=>c.name)];
+  sel.innerHTML = `<option value="">すべてのカテゴリ</option>`
+    + all.map(n=>`<option${n===cur?' selected':''}>${n}</option>`).join('');
+}
+function updateSearchClear() {
+  const val = document.getElementById('taskSearch')?.value || '';
+  const btn = document.getElementById('taskSearchClear');
+  if (btn) btn.classList.toggle('visible', val.length > 0);
+}
+function clearTaskSearch() {
+  const el = document.getElementById('taskSearch');
+  if (el) { el.value = ''; updateSearchClear(); renderTasks(); }
 }
 
-function rtHTML(rt) {
+function hlText(text, q) {
+  if (!q || !text) return text || '';
+  const safe = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return text.replace(new RegExp(`(${safe})`,'gi'),'<mark class="search-highlight">$1</mark>');
+}
+
+function rtHTML(rt, searchF='') {
   const done = isCompletedNow(rt);
   const streak = calcStreak(rt);
   const totalMin = rt.completions?.reduce((s,c)=>s+c.minutes,0) || 0;
@@ -2177,13 +2256,13 @@ function rtHTML(rt) {
   return `<div class="rt-item ${done?'rt-done':''}">
     <div class="rt-check ${done?'checked':''}" onclick="toggleRecurring(${rt.id})"></div>
     <div class="rt-info">
-      <div class="rt-name">${rt.name}</div>
+      <div class="rt-name">${hlText(rt.name,searchF)}</div>
       <div class="rt-meta">
         <span class="recur-badge">${getRecurLabel(rt)}</span>
         ${catBadgeHTML(rt.cat)}
         ${streak>0?`<span class="streak-badge">🔥 ${streak}${
           rt.recurrence==='daily'?'日':rt.recurrence==='monthly'?'ヶ月':rt.recurrence==='yearly'?'年':'週'}連続</span>`:''}
-        ${rt.subj?`<span style="font-size:11px;color:var(--text2)">${rt.subj}</span>`:''}
+        ${rt.subj?`<span style="font-size:11px;color:var(--text2)">${hlText(rt.subj,searchF)}</span>`:''}
       </div>
     </div>
     <div class="rt-right">
@@ -2196,19 +2275,19 @@ function rtHTML(rt) {
   </div>`;
 }
 
-function taskHTML(t) {
+function taskHTML(t, searchF='') {
   const diff = t.due?daysUntil(t.due):null;
   const dateLbl = t.due
     ? `${fmtDate(t.due)}${diff<0?` <span class="overdue">(${-diff}日超過)</span>`:diff===0?' <span class="soon">(今日)</span>':diff<=3?` <span class="soon">(あと${diff}日)</span>`:` (あと${diff}日)`}`:'';
   return `<div class="task-item ${t.done?'done':''}">
     <div class="task-check ${t.done?'checked':''}" onclick="toggleTask(${t.id})"></div>
     <div class="task-info">
-      <div class="task-name">${t.name}</div>
+      <div class="task-name">${hlText(t.name,searchF)}</div>
       <div class="task-meta">
         ${dateLbl}
         ${catBadgeHTML(t.cat)}
         <span class="badge priority-${t.pri}">${{high:'高',mid:'中',low:'低'}[t.pri]}</span>
-        ${t.subj?`<span>${t.subj}</span>`:''}
+        ${t.subj?`<span>${hlText(t.subj,searchF)}</span>`:''}
       </div>
     </div>
     <div class="task-actions">

@@ -434,6 +434,17 @@
 
   /* ── SETTINGS MODAL ── */
   .settings-section{margin-bottom:20px}
+  /* ── CUSTOM CATEGORIES ── */
+  .custom-cat-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+  .custom-cat-swatch{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+  .custom-cat-name{flex:1;font-size:13px;color:var(--text)}
+  .custom-cat-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px;line-height:1}
+  .custom-cat-del:hover{background:rgba(239,68,68,.15);color:#ef4444}
+  .custom-cat-add{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .custom-cat-add input[type=text]{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text)}
+  .custom-cat-add input[type=color]{width:40px;height:36px;padding:2px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface2)}
+  .custom-cat-add-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap}
+  .custom-cat-add-btn:hover{opacity:.85}
   .history-list{max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
   .history-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
   .history-item:last-child{border-bottom:none}
@@ -562,6 +573,7 @@
     <button class="nav-item" onclick="filterPage('試験')"><span class="nav-dot" style="background:var(--red)"></span>試験・テスト</button>
     <button class="nav-item" onclick="filterPage('サークル')"><span class="nav-dot" style="background:var(--purple)"></span>サークル</button>
     <button class="nav-item" onclick="filterPage('その他')"><span class="nav-dot" style="background:var(--text2)"></span>その他</button>
+    <div id="navCustomCats"></div>
   </div>
 </nav>
 
@@ -690,7 +702,7 @@
     <div class="form-cols">
       <div class="form-row">
         <label>カテゴリ</label>
-        <select id="t_cat"><option>課題</option><option>試験</option><option>授業</option><option>サークル</option><option>その他</option></select>
+        <select id="t_cat"><option>課題</option><option>試験</option><option>授業</option><option>サークル</option><option>その他</option></select><!-- custom cats added dynamically -->
       </div>
       <div class="form-row">
         <label>優先度</label>
@@ -1123,6 +1135,17 @@
     </div>
 
     <div class="settings-section">
+      <div class="settings-section-title">🏷️ カテゴリ管理</div>
+      <div id="customCatList"></div>
+      <div class="custom-cat-add">
+        <input type="text" id="newCatName" placeholder="カテゴリ名" maxlength="20">
+        <input type="color" id="newCatColor" value="#6366f1" title="色を選択">
+        <button class="custom-cat-add-btn" onclick="addCustomCategory()">＋ 追加</button>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px">カレンダー・統計・タスク一覧で表示される色が適用されます</div>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-section-title">🗂️ 削除履歴</div>
       <div id="deletionHistoryList"></div>
       <button class="settings-btn" onclick="clearDeletionHistory()" style="color:var(--text2)">
@@ -1186,6 +1209,7 @@ let grades = sto.get('grades',[]);
 let sessionCounts = sto.get('sessionCounts',{});
 let periodSettings = sto.get('periodSettings', DEFAULT_PERIOD_TIMES);
 let absLimitCount  = sto.get('absLimitCount', 5);
+let customCategories = sto.get('customCats', []);
 
 // ── SERVICE WORKER & NOTIFICATION ──
 let swRegistration = null;
@@ -1632,7 +1656,7 @@ function renderDashboard() {
         const lbl=diff<0?`${-diff}日超過`:diff===0?'今日':`あと${diff}日`;
         return `<div class="tl-item" style="border-left-color:${priColor(t.pri)}">
           <div class="tl-date ${cls}">${fmtDate(t.due)}<br>${lbl}</div>
-          <div><div class="tl-title">${t.name}</div><div class="tl-sub">${t.subj||''} <span class="badge cat-${catKey(t.cat)}">${t.cat}</span></div></div>
+          <div><div class="tl-title">${t.name}</div><div class="tl-sub">${t.subj||''} ${catBadgeHTML(t.cat)}</div></div>
         </div>`;
       }).join('');
 }
@@ -2156,7 +2180,7 @@ function rtHTML(rt) {
       <div class="rt-name">${rt.name}</div>
       <div class="rt-meta">
         <span class="recur-badge">${getRecurLabel(rt)}</span>
-        <span class="badge cat-${catKey(rt.cat)}">${rt.cat}</span>
+        ${catBadgeHTML(rt.cat)}
         ${streak>0?`<span class="streak-badge">🔥 ${streak}${
           rt.recurrence==='daily'?'日':rt.recurrence==='monthly'?'ヶ月':rt.recurrence==='yearly'?'年':'週'}連続</span>`:''}
         ${rt.subj?`<span style="font-size:11px;color:var(--text2)">${rt.subj}</span>`:''}
@@ -2182,7 +2206,7 @@ function taskHTML(t) {
       <div class="task-name">${t.name}</div>
       <div class="task-meta">
         ${dateLbl}
-        <span class="badge cat-${catKey(t.cat)}">${t.cat}</span>
+        ${catBadgeHTML(t.cat)}
         <span class="badge priority-${t.pri}">${{high:'高',mid:'中',low:'低'}[t.pri]}</span>
         ${t.subj?`<span>${t.subj}</span>`:''}
       </div>
@@ -2234,7 +2258,7 @@ function openEditTask(id) {
   _addTaskReturnToTT = false;
   document.getElementById('taskModalTitle').textContent = 'タスク編集';
   document.getElementById('t_name').value = t.name;
-  document.getElementById('t_cat').value = t.cat;
+  populateCatSelect('t_cat', t.cat);
   document.getElementById('t_pri').value = t.pri;
   document.getElementById('t_recur').value = 'none';
   document.getElementById('t_due').value = t.due || '';
@@ -2358,7 +2382,7 @@ function renderStats() {
         <div><div class="tsc-name">${rt.name}</div>
           <div class="tsc-badges">
             <span class="recur-badge">${rt.recurrence==='daily'?'毎日':'毎週'}</span>
-            <span class="badge cat-${catKey(rt.cat)}">${rt.cat}</span>
+            ${catBadgeHTML(rt.cat)}
             ${rt.subj?`<span style="font-size:11px;color:var(--text2)">${rt.subj}</span>`:''}
           </div>
         </div>
@@ -2460,7 +2484,7 @@ function openTaskDetail(id) {
     ${t.done ? '<div class="td-done-bar">✅ 完了済みのタスクです</div>' : ''}
     <div class="td-name">${t.name}</div>
     <div class="td-badges">
-      <span class="badge cat-${catKey(t.cat)}">${t.cat}</span>
+      ${catBadgeHTML(t.cat)}
       <span class="badge priority-${t.pri}">${{high:'優先度：高',mid:'優先度：中',low:'優先度：低'}[t.pri]}</span>
     </div>
     ${t.due ? `<div class="td-row"><span class="td-icon">⏰</span><div><div class="td-label">期限</div><div class="td-val" style="${dateColor}">${dateLbl}</div></div></div>` : ''}
@@ -2493,7 +2517,7 @@ function renderUpcoming() {
     return `<div class="tl-item" style="border-left-color:${priColor(t.pri)}">
       <div class="tl-date ${cls}">${fmtDate(t.due)}<br><strong>${lbl}</strong></div>
       <div style="flex:1"><div class="tl-title">${t.name}</div>
-        <div class="tl-sub">${t.subj?t.subj+' / ':''}<span class="badge cat-${catKey(t.cat)}">${t.cat}</span> <span class="badge priority-${t.pri}">${{high:'高',mid:'中',low:'低'}[t.pri]}</span></div>
+        <div class="tl-sub">${t.subj?t.subj+' / '+'':''}${catBadgeHTML(t.cat)} <span class="badge priority-${t.pri}">${{high:'高',mid:'中',low:'低'}[t.pri]}</span></div>
         ${t.note?`<div class="tl-sub" style="margin-top:4px">${t.note}</div>`:''}
       </div>
       <button class="task-del" style="opacity:1" onclick="deleteTask(${t.id});renderUpcoming()">🗑</button>
@@ -2610,7 +2634,7 @@ function openAddTask() {
   _addTaskReturnToTT=false;
   document.getElementById('taskModalTitle').textContent='タスク追加';
   ['t_name','t_due','t_note'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('t_cat').value='課題';
+  populateCatSelect('t_cat','課題');
   document.getElementById('t_pri').value='mid';
   document.getElementById('t_recur').value='none';
   // 授業リンク リセット
@@ -3154,6 +3178,7 @@ function openSettings() {
   updateNotifStatus();
   renderPeriodTimeInputs();
   renderDeletionHistory();
+  renderCustomCatList();
   const ali = document.getElementById('absLimitInput');
   if (ali) ali.value = absLimitCount;
   const raw = window.location.href.split('?')[0].split('#')[0];
@@ -3550,9 +3575,67 @@ function resetAllData() {
 }
 
 // ── HELPERS ──
-function catKey(cat){return{'授業':'class','課題':'hw','試験':'exam','サークル':'club','その他':'other'}[cat]||'other'}
-function catBg(cat){return{'授業':'rgba(59,130,246,.15)','課題':'rgba(249,115,22,.15)','試験':'rgba(239,68,68,.15)','サークル':'rgba(168,85,247,.15)','その他':'rgba(148,163,184,.1)'}[cat]||'rgba(148,163,184,.1)'}
-function catColor(cat){return{'授業':'#3b82f6','課題':'#f97316','試験':'#ef4444','サークル':'#a855f7','その他':'#94a3b8'}[cat]||'#94a3b8'}
+// ── CUSTOM CATEGORIES ──
+function populateCatSelect(selectId, selected) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const builtIn = ['課題','試験','授業','サークル','その他'];
+  const all = [...builtIn, ...customCategories.map(c=>c.name)];
+  sel.innerHTML = all.map(n=>`<option${n===selected?' selected':''}>${n}</option>`).join('');
+}
+function renderCustomCatList() {
+  const el = document.getElementById('customCatList');
+  if (!el) return;
+  if (!customCategories.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:4px 0 8px">カスタムカテゴリはまだありません</div>';
+    return;
+  }
+  el.innerHTML = customCategories.map(c=>`
+    <div class="custom-cat-item">
+      <span class="custom-cat-swatch" style="background:${c.color}"></span>
+      <span class="custom-cat-name">${c.name}</span>
+      <button class="custom-cat-del" onclick="deleteCustomCategory(${c.id})" title="削除">✕</button>
+    </div>`).join('');
+}
+function renderSidebarCustomCats() {
+  const el = document.getElementById('navCustomCats');
+  if (!el) return;
+  el.innerHTML = customCategories.map(c=>`
+    <button class="nav-item" onclick="filterPage('${c.name.replace(/'/g,"\\'")}')">
+      <span class="nav-dot" style="background:${c.color}"></span>${c.name}
+    </button>`).join('');
+}
+function addCustomCategory() {
+  const nameEl = document.getElementById('newCatName');
+  const colorEl = document.getElementById('newCatColor');
+  const name = nameEl.value.trim();
+  if (!name) { nameEl.focus(); return; }
+  const builtIn = ['授業','課題','試験','サークル','その他'];
+  if (builtIn.includes(name) || customCategories.some(c=>c.name===name)) {
+    alert('同じ名前のカテゴリが既に存在します');
+    return;
+  }
+  if (name.length > 20) { alert('カテゴリ名は20文字以内にしてください'); return; }
+  const color = colorEl.value;
+  customCategories.push({id: Date.now(), name, color});
+  sto.set('customCats', customCategories);
+  nameEl.value = '';
+  renderCustomCatList();
+  renderSidebarCustomCats();
+}
+function deleteCustomCategory(id) {
+  if (!confirm('このカテゴリを削除しますか？\n（既存タスクのカテゴリは変更されません）')) return;
+  customCategories = customCategories.filter(c=>c.id!==id);
+  sto.set('customCats', customCategories);
+  renderCustomCatList();
+  renderSidebarCustomCats();
+}
+
+function hexToRgba(hex,alpha){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${alpha})`}
+function catKey(cat){return{'授業':'class','課題':'hw','試験':'exam','サークル':'club','その他':'other'}[cat]||(customCategories.some(c=>c.name===cat)?'custom':'other')}
+function catColor(cat){const m={'授業':'#3b82f6','課題':'#f97316','試験':'#ef4444','サークル':'#a855f7','その他':'#94a3b8'};if(m[cat])return m[cat];const c=customCategories.find(c=>c.name===cat);return c?c.color:'#94a3b8'}
+function catBg(cat){const m={'授業':'rgba(59,130,246,.15)','課題':'rgba(249,115,22,.15)','試験':'rgba(239,68,68,.15)','サークル':'rgba(168,85,247,.15)','その他':'rgba(148,163,184,.1)'};if(m[cat])return m[cat];const c=customCategories.find(c=>c.name===cat);return c?hexToRgba(c.color,.15):'rgba(148,163,184,.1)'}
+function catBadgeHTML(cat){const key=catKey(cat);if(key!=='custom')return`<span class="badge cat-${key}">${cat}</span>`;return`<span class="badge" style="background:${catBg(cat)};color:${catColor(cat)}">${cat}</span>`}
 function priColor(pri){return{high:'#ef4444',mid:'#eab308',low:'#22c55e'}[pri]||'#94a3b8'}
 
 // ── INIT ──
@@ -3571,6 +3654,7 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 migrateClassTerms();
 buildSemesterSelect();
 renderSwatches();
+renderSidebarCustomCats();
 renderDashboard();
 registerSW().then(() => autoCheckDeadlines());
 loadEmbeddedData();

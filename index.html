@@ -94,31 +94,6 @@
   .dh-name.done{text-decoration:line-through;opacity:.5}
   .dh-badge{font-size:10px;color:var(--text2);margin-top:2px}
 
-  /* ── SABORI AI ── */
-  .sabori-card{border-radius:14px;margin-bottom:16px;overflow:hidden;border:2px solid}
-  .sabori-card.warn  {border-color:var(--yellow);background:rgba(234,179,8,.07)}
-  .sabori-card.danger{border-color:var(--orange);background:rgba(249,115,22,.07)}
-  .sabori-card.crit  {border-color:var(--red);background:rgba(239,68,68,.07);animation:warnPulse 2s ease-in-out infinite}
-  .sabori-head{display:flex;align-items:center;gap:10px;padding:13px 15px 10px}
-  .sabori-icon{font-size:26px;line-height:1;flex-shrink:0}
-  .sabori-title{font-size:14px;font-weight:700;flex:1}
-  .sabori-card.warn  .sabori-title{color:#854d0e}
-  .sabori-card.danger .sabori-title{color:#9a3412}
-  .sabori-card.crit  .sabori-title{color:var(--red)}
-  .sabori-score-pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
-  .sabori-card.warn  .sabori-score-pill{background:rgba(234,179,8,.25);color:#854d0e}
-  .sabori-card.danger .sabori-score-pill{background:rgba(249,115,22,.25);color:#9a3412}
-  .sabori-card.crit  .sabori-score-pill{background:rgba(239,68,68,.2);color:var(--red)}
-  .sabori-msg{font-size:15px;font-weight:700;padding:0 15px 10px;line-height:1.45}
-  .sabori-card.warn  .sabori-msg{color:#78350f}
-  .sabori-card.danger .sabori-msg{color:#7c2d12}
-  .sabori-card.crit  .sabori-msg{color:#991b1b}
-  .sabori-details{padding:0 15px 12px;display:flex;flex-direction:column;gap:5px}
-  .sabori-detail-row{display:flex;align-items:flex-start;gap:6px;font-size:12px;color:var(--text)}
-  .sabori-detail-icon{font-size:13px;flex-shrink:0;margin-top:1px}
-  .sabori-foot{border-top:1px solid rgba(0,0,0,.06);padding:8px 12px;display:flex;justify-content:flex-end}
-  .sabori-dismiss{background:none;border:none;font-size:11px;color:var(--text2);cursor:pointer;padding:2px 6px;border-radius:5px}
-  .sabori-dismiss:hover{background:rgba(0,0,0,.06)}
 
   /* ── STATS CARDS ── */
   .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
@@ -659,7 +634,6 @@
     </div>
     <div class="stats" id="statsRow"></div>
     <div id="dashHabits"></div>
-    <div id="dashSabori"></div>
     <div class="dash-grid">
       <div>
         <div class="section-header"><h2>今日の授業</h2></div>
@@ -1257,7 +1231,7 @@
         <span class="sb-icon">🔔</span>
         <div class="sb-text">
           <div>締め切りリマインダー</div>
-          <div class="sb-sub">今日・明日が期限のタスクを通知</div>
+          <div class="sb-sub">時間割・予定・タスク締め切りを毎日通知</div>
         </div>
         <span class="notif-status" id="notifStatus">確認中</span>
       </button>
@@ -1265,7 +1239,7 @@
         <span class="sb-icon">📣</span>
         <div class="sb-text">
           <div>今すぐ期限チェック</div>
-          <div class="sb-sub">期限が近いタスクを通知する</div>
+          <div class="sb-sub">時間割・予定・締め切り・習慣タスクをまとめて通知</div>
         </div>
       </button>
       <div id="iosNotifGuide" style="display:none;background:var(--green-bg,#f0faf3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--text2);line-height:1.8">
@@ -1624,133 +1598,6 @@ function switchTTTab(tab) {
 }
 
 // ── DASHBOARD ──
-// ── サボり検知AI ──
-function calcSaboriScore() {
-  let score = 0;
-  const details = [];
-
-  // 【出席】クラスごとに診断
-  classes.forEach(c => {
-    const absCount = attendance.filter(a => a.classId === c.id).length;
-    const lim = c.absLimit ?? absLimitCount;
-    const remain = lim - absCount;
-    const held = sessionCounts[c.id] || 0;
-    const rate = held > 0 ? Math.round((Math.max(0, held - absCount) / held) * 100) : null;
-
-    if (remain <= 0) {
-      score += 80;
-      details.push({ icon: '🚨', text: `${c.name}：欠席上限超過（${absCount}/${lim}回）` });
-    } else if (remain === 1) {
-      score += 70;
-      details.push({ icon: '🚨', text: `${c.name}：あと1回で欠席上限！（${absCount}/${lim}回）` });
-    } else if (remain === 2) {
-      score += 15;
-      details.push({ icon: '📋', text: `${c.name}：欠席が増えています（残り${remain}回）` });
-    }
-    if (rate !== null && rate < 70) {
-      score += 20;
-      details.push({ icon: '📉', text: `${c.name}：出席率が低下中（${rate}%）` });
-    }
-  });
-
-  // 【タスク】期限超過
-  const overdueList = tasks.filter(t => !t.done && t.due && daysUntil(t.due) < 0);
-  if (overdueList.length >= 3) {
-    score += 35;
-    details.push({ icon: '📚', text: `期限切れタスクが${overdueList.length}件あります` });
-  } else if (overdueList.length > 0) {
-    score += overdueList.length * 15;
-    details.push({ icon: '📌', text: `期限超過タスク：${overdueList.map(t=>t.name).slice(0,2).join('・')}${overdueList.length>2?'…':''}` });
-  }
-
-  // 【タスク】3日以内の締め切りが多い
-  const soonList = tasks.filter(t => !t.done && t.due && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 3);
-  if (soonList.length >= 3) {
-    score += 20;
-    details.push({ icon: '⏰', text: `3日以内の締め切りが${soonList.length}件集中しています` });
-  }
-
-  // 【習慣】ストリーク崩壊（記録はあるのに今期未完了）
-  const brokenStreak = recurringTasks.filter(rt => {
-    if (!rt.completions?.length) return false;
-    if (isCompletedNow(rt)) return false;
-    const streak = calcStreak(rt);
-    return streak === 0; // 前は続けてたのに今期途切れ
-  });
-  if (brokenStreak.length >= 2) {
-    score += 20;
-    details.push({ icon: '🔥', text: `習慣タスクのストリークが${brokenStreak.length}件途切れています` });
-  } else if (brokenStreak.length === 1) {
-    score += 10;
-    details.push({ icon: '🔥', text: `「${brokenStreak[0].name}」のストリークが途切れています` });
-  }
-
-  return { score, details };
-}
-
-const SABORI_MSGS = {
-  warn: [
-    '最近、少しサボり気味では…？',
-    'まだ挽回できます。今すぐ動こう。',
-    '習慣が乱れ始めています。立て直しのチャンスです。',
-    '小さなサボりが積み重なると大変なことになりますよ。'
-  ],
-  danger: [
-    'このままだと単位が危なくなります。',
-    '出席・課題の状況が悪化しています。早急に対策を。',
-    '教授に怒られる前に、今すぐ行動してください。',
-    'ここで踏ん張れるかどうかが重要です。'
-  ],
-  crit: [
-    'このままだと単位落とします。',
-    '緊急事態です。今すぐ動かないと本当に詰みます。',
-    '教務課に土下座する前に、今日から立て直してください。',
-    '後悔する前に行動。チャンスはまだあります。'
-  ]
-};
-
-function renderSaboriAlert() {
-  const el = document.getElementById('dashSabori');
-  if (!el) return;
-
-  // 今日却下済みなら非表示
-  if (sto.get('saboriDismissDate', '') === TODAY) { el.innerHTML = ''; return; }
-
-  const { score, details } = calcSaboriScore();
-
-  let level, icon, label;
-  if      (score >= 70) { level = 'crit';   icon = '💀'; label = '緊急'; }
-  else if (score >= 40) { level = 'danger'; icon = '🚨'; label = '危険'; }
-  else if (score >= 20) { level = 'warn';   icon = '⚠️'; label = '注意'; }
-  else                  { el.innerHTML = ''; return; }
-
-  const msgs = SABORI_MSGS[level];
-  // 日付ベースで固定のメッセージを選ぶ（毎日変わる）
-  const msg = msgs[new Date().getDate() % msgs.length];
-
-  const detailHtml = details.map(d =>
-    `<div class="sabori-detail-row"><span class="sabori-detail-icon">${d.icon}</span><span>${d.text}</span></div>`
-  ).join('');
-
-  el.innerHTML = `
-    <div class="sabori-card ${level}">
-      <div class="sabori-head">
-        <span class="sabori-icon">${icon}</span>
-        <span class="sabori-title">🤖 サボり検知AI</span>
-        <span class="sabori-score-pill">リスクスコア ${score}</span>
-      </div>
-      <div class="sabori-msg">「${msg}」</div>
-      ${detailHtml ? `<div class="sabori-details">${detailHtml}</div>` : ''}
-      <div class="sabori-foot">
-        <button class="sabori-dismiss" onclick="saboriDismiss()">今日は見ない ✕</button>
-      </div>
-    </div>`;
-}
-
-function saboriDismiss() {
-  sto.set('saboriDismissDate', TODAY);
-  document.getElementById('dashSabori').innerHTML = '';
-}
 
 function renderDashboard() {
   const now = new Date(), dow = now.getDay();
@@ -1812,9 +1659,6 @@ function renderDashboard() {
     `<div class="stat-card"><div class="stat-num" style="color:var(--orange)">${pending.length}</div><div class="stat-label">未完了タスク</div></div>
      <div class="stat-card"><div class="stat-num" style="color:var(--red)">${overdue.length}</div><div class="stat-label">期限超過</div></div>
      <div class="stat-card"><div class="stat-num" style="color:${rtPending.length>0?'var(--blue)':'var(--green)'}">${rtPending.length}</div><div class="stat-label">習慣 未完了</div></div>`;
-
-  // ── サボり検知AI
-  renderSaboriAlert();
 
   // ── 今日の習慣タスク（未完了を最大5件、完了済みを最大2件）
   const dhEl = document.getElementById('dashHabits');
@@ -3888,24 +3732,94 @@ async function checkDeadlinesNow() {
     alert('通知を有効にしてから使用してください。');
     return;
   }
-  const pending = tasks.filter(t=>!t.done&&t.due);
-  const today = pending.filter(t=>daysUntil(t.due)===0);
-  const tomorrow = pending.filter(t=>daysUntil(t.due)===1);
-  const overdue = pending.filter(t=>daysUntil(t.due)<0);
   let notified = 0;
+  const now = new Date();
+  const dow = now.getDay();
+
+  // ── 当日の時間割
+  const DOW_MAP_N = {0:'日',1:'月',2:'火',3:'水',4:'木',5:'金',6:'土'};
+  const { year: cY, term: cT } = getSelectedSemester();
+  const todayClasses = classes
+    .filter(c => !isNaN(cY) ? (c.year===cY && c.term===cT) : true)
+    .filter(c => c.day != null && (c.day+1)%7 === dow || (c.day===6 && dow===0) || (()=>{
+      const dowMap2 = [0,1,2,3,4,5,6]; // mon=0 in data, sun=0 in JS
+      // c.day: 0=月,1=火,...,5=土,6=日  JS dow: 0=日,1=月,...,6=土
+      const jsDow = (c.day + 1) % 7; // 月(0)->1, ..., 土(5)->6, 日(6)->0
+      return jsDow === dow;
+    })())
+    .sort((a,b) => a.period - b.period);
+  if (todayClasses.length > 0) {
+    const body = todayClasses.map(c => `${c.period+1}限: ${c.name}${c.room?' ('+c.room+')':''}`).join('\n');
+    await sendNotification('📚 今日の時間割', body, 'today-classes');
+    notified++;
+  }
+
+  // ── 当日の予定 (calEvents)
+  const td = TODAY;
+  const todayEvs = calEvents.filter(e => e.dates.includes(td));
+  for (const e of todayEvs) {
+    const timeLbl = (!e.noTime && e.sh != null) ? ` ${e.sh}:${String(e.sm).padStart(2,'0')}〜` : '';
+    await sendNotification(`📅 今日の予定: ${e.name}`, `${timeLbl}${e.memo||''}`.trim(), 'ev-today-'+e.id);
+    notified++;
+  }
+
+  // ── 繰り返しタスク（本日が対象日）
+  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt));
+  if (todayRTs.length > 0) {
+    const body = todayRTs.map(t => `・${t.name}`).join('\n');
+    await sendNotification(`🔁 本日の習慣タスク (${todayRTs.length}件)`, body, 'rt-today');
+    notified++;
+  }
+
+  // ── 通常タスク: 今日・明日・2〜7日以内・期限超過
+  const pending = tasks.filter(t => !t.done && t.due);
+  const today   = pending.filter(t => daysUntil(t.due) === 0);
+  const tomorrow = pending.filter(t => daysUntil(t.due) === 1);
+  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 7);
+  const overdue = pending.filter(t => daysUntil(t.due) < 0);
+
   for (const t of today) {
-    await sendNotification(`本日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'today-'+t.id);
+    await sendNotification(`⚠️ 本日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'today-'+t.id);
     notified++;
   }
   for (const t of tomorrow) {
-    await sendNotification(`明日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'tmrw-'+t.id);
+    await sendNotification(`📌 明日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'tmrw-'+t.id);
+    notified++;
+  }
+  for (const t of soon) {
+    await sendNotification(`📋 ${daysUntil(t.due)}日後締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'soon-'+t.id);
     notified++;
   }
   for (const t of overdue) {
-    await sendNotification(`期限超過: ${t.name}`, `${-daysUntil(t.due)}日超過 / ${t.cat}${t.subj?' / '+t.subj:''}`, 'over-'+t.id);
+    await sendNotification(`🚨 期限超過: ${t.name}`, `${-daysUntil(t.due)}日超過 / ${t.cat}${t.subj?' / '+t.subj:''}`, 'over-'+t.id);
     notified++;
   }
-  if (notified === 0) alert('期限が近いタスクはありません。');
+
+  if (notified === 0) alert('本日の通知はありません。');
+}
+
+function isRecurDueToday(rt) {
+  const now = new Date();
+  const dow = now.getDay(); // 0=日,1=月,...,6=土
+  const dom = now.getDate();
+  const month = now.getMonth() + 1;
+  const recur = rt.recurrence;
+  if (recur === 'daily') return true;
+  if (recur === 'weekly') {
+    // rt.days: array of JS dow (0=日...)
+    return rt.days && rt.days.includes(dow);
+  }
+  if (recur === 'monthly') {
+    if (rt.lastDay) {
+      const last = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+      return dom === last;
+    }
+    return dom === (rt.monthDay || 1);
+  }
+  if (recur === 'yearly') {
+    return month === (rt.yearMonth || 4) && dom === (rt.yearDay || 1);
+  }
+  return false;
 }
 
 async function autoCheckDeadlines() {
@@ -3915,39 +3829,62 @@ async function autoCheckDeadlines() {
   const lastCheck = sto.get('lastNotifCheck', '');
   if (lastCheck === TODAY) return;
   sto.set('lastNotifCheck', TODAY);
+
   await new Promise(r => setTimeout(r, 2000));
 
-  // 通常の締め切り通知
-  const pending = tasks.filter(t=>!t.done&&t.due);
-  const urgent = pending.filter(t=>daysUntil(t.due)>=0&&daysUntil(t.due)<=1);
-  if (urgent.length > 0) {
-    const body = urgent.map(t=>`・${t.name} (${daysUntil(t.due)===0?'今日':'明日'})`).join('\n');
-    await sendNotification(
-      `UniSchedule: 締め切りが近いタスクが${urgent.length}件あります`,
-      body,
-      'uni-schedule-auto'
-    );
+  const now = new Date();
+  const dow = now.getDay();
+  let notifItems = [];
+
+  // ── 当日の時間割
+  const { year: cY, term: cT } = getSelectedSemester();
+  const todayClasses = classes
+    .filter(c => !isNaN(cY) ? (c.year===cY && c.term===cT) : true)
+    .filter(c => {
+      const jsDow = (c.day + 1) % 7; // c.day: 0=月→JS1, ... 5=土→JS6, 6=日→JS0
+      return jsDow === dow;
+    })
+    .sort((a,b) => a.period - b.period);
+  if (todayClasses.length > 0) {
+    const body = todayClasses.map(c => `${c.period+1}限: ${c.name}${c.room?' ('+c.room+')':''}`).join('\n');
+    await sendNotification('📚 今日の時間割', body, 'auto-classes');
   }
 
-  // サボり検知通知（スコア40以上かつ3日に1回まで）
-  const lastSaboriNotif = sto.get('lastSaboriNotif', '');
-  const daysSinceSaboriNotif = lastSaboriNotif
-    ? Math.floor((new Date(TODAY) - new Date(lastSaboriNotif)) / 86400000)
-    : 999;
-  if (daysSinceSaboriNotif >= 3) {
-    const { score, details } = calcSaboriScore();
-    if (score >= 40) {
-      sto.set('lastSaboriNotif', TODAY);
-      const level = score >= 70 ? '緊急' : '危険';
-      const msgs = score >= 70 ? SABORI_MSGS.crit : SABORI_MSGS.danger;
-      const msg = msgs[new Date().getDate() % msgs.length];
-      const body = details.slice(0, 3).map(d => `・${d.text}`).join('\n');
-      await sendNotification(
-        `🤖 サボり検知AI [${level}] スコア${score}`,
-        `「${msg}」\n${body}`,
-        'uni-schedule-sabori'
-      );
-    }
+  // ── 当日の予定 (calEvents)
+  const td = TODAY;
+  const todayEvs = calEvents.filter(e => e.dates.includes(td));
+  if (todayEvs.length > 0) {
+    const body = todayEvs.map(e => {
+      const timeLbl = (!e.noTime && e.sh != null) ? `${e.sh}:${String(e.sm).padStart(2,'0')} ` : '';
+      return `・${timeLbl}${e.name}`;
+    }).join('\n');
+    await sendNotification(`📅 今日の予定 (${todayEvs.length}件)`, body, 'auto-events');
+  }
+
+  // ── 繰り返しタスク（本日が対象日）
+  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt));
+  if (todayRTs.length > 0) {
+    const body = todayRTs.map(t => `・${t.name}`).join('\n');
+    await sendNotification(`🔁 本日の習慣タスク (${todayRTs.length}件)`, body, 'auto-rt');
+  }
+
+  // ── 通常タスク: 今日〜7日以内 + 期限超過
+  const pending = tasks.filter(t => !t.done && t.due);
+  const urgent  = pending.filter(t => daysUntil(t.due) >= 0 && daysUntil(t.due) <= 1);
+  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 7);
+  const overdue = pending.filter(t => daysUntil(t.due) < 0);
+
+  if (urgent.length > 0) {
+    const body = urgent.map(t => `・${t.name} (${daysUntil(t.due)===0?'今日':'明日'})`).join('\n');
+    await sendNotification(`⚠️ 締め切りが近いタスク (${urgent.length}件)`, body, 'auto-urgent');
+  }
+  if (soon.length > 0) {
+    const body = soon.map(t => `・${t.name} (${daysUntil(t.due)}日後)`).join('\n');
+    await sendNotification(`📋 今週締め切りのタスク (${soon.length}件)`, body, 'auto-soon');
+  }
+  if (overdue.length > 0) {
+    const body = overdue.map(t => `・${t.name} (${-daysUntil(t.due)}日超過)`).join('\n');
+    await sendNotification(`🚨 期限超過タスク (${overdue.length}件)`, body, 'auto-overdue');
   }
 }
 

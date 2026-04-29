@@ -551,15 +551,9 @@
     .sidebar{width:240px}
     .app-body{margin-left:240px}
   }
+  .upcoming-toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
   /* ── NARROW MOBILE (PWA / small screens) ── */
-  @media(max-width:430px){
-    .header-brand span{display:none}
-    .header h1{font-size:13px;letter-spacing:0}
-    .add-btn-label{display:none}
-    .icon-btn{padding:7px 8px;font-size:14px}
-  }
-  @media(min-width:431px) and (max-width:600px){
-    .header h1{font-size:14px}
+  @media(max-width:560px){
     .add-btn-label{display:none}
   }
 </style>
@@ -576,7 +570,6 @@
   <div class="header-date" id="headerDate"></div>
   <button class="add-btn" onclick="openAddTask()">＋<span class="add-btn-label"> タスク追加</span></button>
   <button class="icon-btn" onclick="openMobileQR()" title="スマートフォンで開く">📱</button>
-  <button class="icon-btn" onclick="openSettings()" title="設定">🛠️</button>
   <button class="icon-btn" onclick="downloadWithData()" title="データを保存してHTMLをダウンロード">🗃️</button>
 </header>
 
@@ -588,7 +581,7 @@
     <button class="nav-item" data-page="tasks" onclick="showPage('tasks',this)"><span>📋</span>タスク・課題</button>
     <button class="nav-item" data-page="stats" onclick="showPage('stats',this)"><span>📈</span>習慣・統計</button>
     <button class="nav-item" data-page="calendar" onclick="showPage('calendar',this)"><span>📆</span>カレンダー</button>
-    <button class="nav-item" data-page="upcoming" onclick="showPage('upcoming',this)"><span>⏰</span>期限一覧</button>
+    <button class="nav-item" onclick="showPage('dashboard',this);setTimeout(()=>document.getElementById('upcomingDashSection')?.scrollIntoView({behavior:'smooth'}),100)"><span>⏰</span>期限一覧</button>
   </div>
   <div class="nav-section" style="margin-top:8px">
     <div class="nav-label">カテゴリ</div>
@@ -621,10 +614,27 @@
         <div class="section-header"><h2>今日の授業</h2></div>
         <div id="todayClasses"></div>
       </div>
-      <div>
-        <div class="section-header"><h2>直近の締め切り</h2></div>
-        <div id="upcomingDeadlines"></div>
+    </div>
+    <div id="upcomingDashSection">
+      <div class="section-header" style="margin-top:16px"><h2>⏰ 期限一覧</h2></div>
+      <div class="upcoming-toolbar">
+        <div class="task-search-wrap" style="flex-basis:100%">
+          <input type="text" id="upcomingSearch" class="task-search-input" placeholder="タスク名・授業名・メモで絞り込み" oninput="renderUpcomingDash()">
+          <button class="task-search-clear" id="upcomingSearchClear" onclick="document.getElementById('upcomingSearch').value='';renderUpcomingDash()" style="display:none" title="クリア">✕</button>
+        </div>
+        <select id="upcomingSortFilter" onchange="renderUpcomingDash()" style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;-webkit-appearance:none">
+          <option value="due">期限日順</option>
+          <option value="created_new">追加日（新しい順）</option>
+          <option value="created_old">追加日（古い順）</option>
+          <option value="related">関連授業順</option>
+          <option value="name">名前順</option>
+        </select>
+        <select id="upcomingStatusFilter" onchange="renderUpcomingDash()" style="flex:1;min-width:100px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;-webkit-appearance:none">
+          <option value="pending">未完了のみ</option>
+          <option value="all">すべて</option>
+        </select>
       </div>
+      <div id="upcomingDashList"></div>
     </div>
   </div>
 
@@ -722,7 +732,7 @@
   <button class="bn-item" data-page="tasks" onclick="showPage('tasks',this)"><span class="bn-icon">📋</span>タスク</button>
   <button class="bn-item" data-page="stats" onclick="showPage('stats',this)"><span class="bn-icon">📈</span>統計</button>
   <button class="bn-item" data-page="calendar" onclick="showPage('calendar',this)"><span class="bn-icon">📆</span>カレンダー</button>
-  <button class="bn-item" data-page="upcoming" onclick="showPage('upcoming',this)"><span class="bn-icon">⏰</span>期限</button>
+  <button class="bn-item" onclick="openSettings()"><span class="bn-icon">🛠️</span>設定</button>
 </nav>
 
 <!-- Add Task Modal -->
@@ -1682,18 +1692,53 @@ function renderDashboard() {
         </div>`;
       }).join('');
 
-  // ── 直近の締め切り
-  const upcoming = pending.filter(t=>t.due).sort((a,b)=>new Date(a.due)-new Date(b.due)).slice(0,5);
-  document.getElementById('upcomingDeadlines').innerHTML = !upcoming.length
-    ? '<div class="empty-state"><div class="es-icon">✨</div>期限のあるタスクなし</div>'
-    : upcoming.map(t=>{
-        const diff=daysUntil(t.due), cls=diff<0?'overdue':diff<=3?'soon':'';
-        const lbl=diff<0?`${-diff}日超過`:diff===0?'今日':`あと${diff}日`;
-        return `<div class="tl-item" style="border-left-color:${priColor(t.pri)}">
-          <div class="tl-date ${cls}">${fmtDate(t.due)}<br>${lbl}</div>
-          <div><div class="tl-title">${t.name}</div><div class="tl-sub">${t.subj||''} ${catBadgeHTML(t.cat)}</div></div>
-        </div>`;
-      }).join('');
+  renderUpcomingDash();
+}
+
+function renderUpcomingDash() {
+  const el = document.getElementById('upcomingDashList');
+  if (!el) return;
+  const sortF   = document.getElementById('upcomingSortFilter')?.value || 'due';
+  const statusF = document.getElementById('upcomingStatusFilter')?.value || 'pending';
+  const rawQ    = document.getElementById('upcomingSearch')?.value || '';
+  const q       = rawQ.toLowerCase().trim();
+
+  // 検索クリアボタン表示切替
+  const clrBtn = document.getElementById('upcomingSearchClear');
+  if (clrBtn) clrBtn.style.display = q ? 'block' : 'none';
+
+  let list = statusF === 'all' ? tasks.filter(t=>t.due) : tasks.filter(t=>!t.done && t.due);
+  if (q) list = list.filter(t =>
+    (t.name||'').toLowerCase().includes(q) ||
+    (t.subj||'').toLowerCase().includes(q) ||
+    (t.note||'').toLowerCase().includes(q)
+  );
+
+  // ソート
+  if (sortF==='due')          list.sort((a,b)=>new Date(a.due)-new Date(b.due));
+  else if (sortF==='created_new') list.sort((a,b)=>b.id-a.id);
+  else if (sortF==='created_old') list.sort((a,b)=>a.id-b.id);
+  else if (sortF==='related') list.sort((a,b)=>(a.subj||'').localeCompare(b.subj||'','ja'));
+  else if (sortF==='name')    list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">${q?'🔍':'✨'}</div>${q?`「${rawQ}」に一致するタスクなし`:'期限のあるタスクなし'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(t => {
+    const diff = daysUntil(t.due);
+    const cls  = diff < 0 ? 'overdue' : diff <= 3 ? 'soon' : '';
+    const lbl  = diff < 0 ? `${-diff}日超過` : diff === 0 ? '今日締め切り' : `あと${diff}日`;
+    return `<div class="tl-item ${t.done?'':''}\" style="border-left-color:${priColor(t.pri)};opacity:${t.done?.6:1}" onclick="openTaskDetail(${t.id})">
+      <div class="tl-date ${cls}">${fmtDate(t.due)}<br><strong>${lbl}</strong></div>
+      <div style="flex:1">
+        <div class="tl-title${t.done?' done':''}">${hlText(t.name,q)}</div>
+        <div class="tl-sub">${t.subj?hlText(t.subj,q)+' / ':''} ${catBadgeHTML(t.cat)} <span class="badge priority-${t.pri}">${{high:'高',mid:'中',low:'低'}[t.pri]}</span></div>
+        ${t.note?`<div class="tl-sub" style="margin-top:3px">${hlText(t.note,q)}</div>`:''}
+      </div>
+      <button class="task-del" style="opacity:1;flex-shrink:0" onclick="event.stopPropagation();deleteTask(${t.id});renderUpcomingDash()" title="削除">🗑</button>
+    </div>`;
+  }).join('');
 }
 
 // ダッシュボードから習慣タスクをトグル

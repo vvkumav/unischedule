@@ -26,6 +26,65 @@
     --safe-b: env(safe-area-inset-bottom,0px);
     --safe-t: env(safe-area-inset-top,0px);
   }
+
+  /* ── 四季テーマ ── */
+  /* 春 3〜5月: 桜ピンク */
+  body[data-season="spring"] {
+    --bg:#fff0f7;--surface:#ffffff;--surface2:#fce7f3;--border:#fbcfe8;
+    --accent:#ec4899;--accent2:#be185d;--text:#831843;--text2:#9d174d;
+  }
+  body[data-season="spring"] .header{box-shadow:0 2px 8px rgba(236,72,153,.13)}
+  body[data-season="spring"] .bottom-nav{box-shadow:0 -2px 8px rgba(236,72,153,.1)}
+  body[data-season="spring"] .add-btn:active{background:#9d174d}
+  body[data-season="spring"]::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 8% 18%,rgba(249,168,212,.12) 0%,transparent 45%),
+      radial-gradient(circle at 92% 75%,rgba(251,207,232,.10) 0%,transparent 40%);
+  }
+  /* 夏 6〜8月: 海ブルー */
+  body[data-season="summer"] {
+    --bg:#f0f9ff;--surface:#ffffff;--surface2:#e0f2fe;--border:#bae6fd;
+    --accent:#0ea5e9;--accent2:#0284c7;--text:#0c4a6e;--text2:#075985;
+  }
+  body[data-season="summer"] .header{box-shadow:0 2px 8px rgba(14,165,233,.13)}
+  body[data-season="summer"] .bottom-nav{box-shadow:0 -2px 8px rgba(14,165,233,.1)}
+  body[data-season="summer"] .add-btn:active{background:#075985}
+  body[data-season="summer"]::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 85% 10%,rgba(251,191,36,.10) 0%,transparent 40%),
+      radial-gradient(circle at 10% 90%,rgba(56,189,248,.10) 0%,transparent 45%);
+  }
+  /* 秋 9〜11月: 紅葉オレンジ */
+  body[data-season="autumn"] {
+    --bg:#fffbf5;--surface:#ffffff;--surface2:#fff7ed;--border:#fed7aa;
+    --accent:#f97316;--accent2:#ea580c;--text:#7c2d12;--text2:#9a3412;
+  }
+  body[data-season="autumn"] .header{box-shadow:0 2px 8px rgba(249,115,22,.13)}
+  body[data-season="autumn"] .bottom-nav{box-shadow:0 -2px 8px rgba(249,115,22,.1)}
+  body[data-season="autumn"] .add-btn:active{background:#c2410c}
+  body[data-season="autumn"]::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 90% 15%,rgba(249,115,22,.10) 0%,transparent 40%),
+      radial-gradient(circle at 5% 85%,rgba(220,38,38,.08) 0%,transparent 45%);
+  }
+  /* 冬 12〜2月: 氷ブルー */
+  body[data-season="winter"] {
+    --bg:#eff6ff;--surface:#ffffff;--surface2:#dbeafe;--border:#bfdbfe;
+    --accent:#3b82f6;--accent2:#1d4ed8;--text:#1e3a5f;--text2:#1e40af;
+  }
+  body[data-season="winter"] .header{box-shadow:0 2px 8px rgba(59,130,246,.13)}
+  body[data-season="winter"] .bottom-nav{box-shadow:0 -2px 8px rgba(59,130,246,.1)}
+  body[data-season="winter"] .add-btn:active{background:#1e40af}
+  body[data-season="winter"]::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 88% 12%,rgba(147,197,253,.12) 0%,transparent 40%),
+      radial-gradient(circle at 12% 88%,rgba(165,180,252,.10) 0%,transparent 45%);
+  }
+
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overscroll-behavior:none;touch-action:manipulation}
   body{background:var(--bg);color:var(--text);font-family:'Outfit','Noto Sans JP',system-ui,sans-serif}
@@ -588,7 +647,7 @@
 
 <header class="header">
   <div class="header-brand">
-    <span style="font-size:20px">🏫</span>
+    <span id="seasonEmoji" style="font-size:20px">🏫</span>
     <h1>UniSchedule</h1>
     <span style="font-size:20px">🐻</span>
   </div>
@@ -607,7 +666,7 @@
     <button class="nav-item" data-page="tasks" onclick="showPage('tasks',this)"><span>📋</span>タスク・課題</button>
     <button class="nav-item" data-page="stats" onclick="showPage('stats',this)"><span>📈</span>習慣・統計</button>
     <button class="nav-item" data-page="calendar" onclick="showPage('calendar',this)"><span>📆</span>カレンダー</button>
-    <button class="nav-item" onclick="showPage('dashboard',this);setTimeout(()=>document.getElementById('upcomingDashSection')?.scrollIntoView({behavior:'smooth'}),100)"><span>⏰</span>期限一覧</button>
+    <button class="nav-item" onclick="openSettings()"><span>🛠️</span>設定</button>
   </div>
   <div class="nav-section" style="margin-top:8px">
     <div class="nav-label">カテゴリ</div>
@@ -3822,6 +3881,22 @@ function isRecurDueToday(rt) {
   return false;
 }
 
+/* ── 四季テーマ ── */
+function getSeason() {
+  const m = new Date().getMonth() + 1; // 1〜12
+  if (m >= 3 && m <= 5) return 'spring';
+  if (m >= 6 && m <= 8) return 'summer';
+  if (m >= 9 && m <= 11) return 'autumn';
+  return 'winter'; // 12, 1, 2
+}
+function applySeason() {
+  const season = getSeason();
+  document.body.dataset.season = season;
+  const icons = { spring:'🌸', summer:'☀️', autumn:'🍂', winter:'❄️' };
+  const el = document.getElementById('seasonEmoji');
+  if (el) el.textContent = icons[season] || '🏫';
+}
+
 async function autoCheckDeadlines() {
   const perm = ('Notification' in window) ? Notification.permission : 'default';
   if (perm !== 'granted' && !swRegistration) return;
@@ -4241,6 +4316,7 @@ renderSidebarCustomCats();
 renderDashboard();
 registerSW().then(() => autoCheckDeadlines());
 loadEmbeddedData();
+applySeason();
 </script>
 </body>
 </html>

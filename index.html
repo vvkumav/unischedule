@@ -3668,6 +3668,17 @@ async function handleScannedQRData(compressed) {
 }
 
 let _qrInstance = null;
+// ── スマホアクセス用URL取得 ──
+// ローカル環境（localhost/file://）の場合はGitHub PagesのURLを返す
+const _PUBLIC_URL = 'https://vvkumav.github.io/unischedule/';
+function getPublicUrl() {
+  const h = location.hostname;
+  if (!h || h === 'localhost' || h === '127.0.0.1' || location.protocol === 'file:' || h.endsWith('.local')) {
+    return _PUBLIC_URL;
+  }
+  return location.href.split('?')[0].split('#')[0];
+}
+
 function updateQR() {
   const input = document.getElementById('mobileUrlInput');
   const el = document.getElementById('qrCanvas');
@@ -3694,7 +3705,7 @@ function openMobileQR() {
   const modal = document.getElementById('mobileQRModal');
   const canvas = document.getElementById('mobileQRCanvas');
   const urlEl = document.getElementById('mobileQRUrl');
-  const url = location.href.split('?')[0].split('#')[0];
+  const url = getPublicUrl();
   urlEl.textContent = url;
   canvas.innerHTML = '';
   if (typeof QRCode !== 'undefined') {
@@ -3716,7 +3727,7 @@ function closeMobileQR() {
   document.getElementById('mobileQRModal').classList.remove('show');
 }
 function copyMobileQRUrl() {
-  const url = location.href.split('?')[0].split('#')[0];
+  const url = getPublicUrl();
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(() => alert('✅ URLをコピーしました\nブラウザのアドレスバーに貼り付けて「移動」を押してください'));
   } else {
@@ -3730,7 +3741,7 @@ function openSettings() {
   renderCustomCatList();
   const ali = document.getElementById('absLimitInput');
   if (ali) ali.value = absLimitCount;
-  const raw = window.location.href.split('?')[0].split('#')[0];
+  const raw = getPublicUrl();
   const input = document.getElementById('mobileUrlInput');
   if (input && !input.value) input.value = raw;
   document.getElementById('settingsModal').classList.add('show');

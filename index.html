@@ -1720,7 +1720,7 @@ function renderDashboard() {
   document.getElementById('todaySubtitle').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
 
   const pending  = tasks.filter(t=>!t.done);
-  const overdue  = pending.filter(t=>t.due&&daysUntil(t.due)<0);
+  const overdue  = pending.filter(t=>t.due&&daysUntil(t.due)<0&&daysUntil(t.due)>=-2);
   const todayCls = classes.filter(c=>DOW_MAP[c.day]===dow).sort((a,b)=>a.period-b.period);
   const rtDone   = recurringTasks.filter(isCompletedNow).length;
   const rtPending = recurringTasks.filter(r=>!isCompletedNow(r));
@@ -1833,7 +1833,7 @@ function renderUpcomingDash() {
   const clrBtn = document.getElementById('upcomingSearchClear');
   if (clrBtn) clrBtn.style.display = q ? 'block' : 'none';
 
-  let list = statusF === 'all' ? tasks.filter(t=>t.due) : tasks.filter(t=>!t.done && t.due);
+  let list = statusF === 'all' ? tasks.filter(t=>t.due && daysUntil(t.due) >= -2) : tasks.filter(t=>!t.done && t.due && daysUntil(t.due) >= -2);
   if (q) list = list.filter(t =>
     (t.name||'').toLowerCase().includes(q) ||
     (t.subj||'').toLowerCase().includes(q) ||

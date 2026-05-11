@@ -776,7 +776,6 @@
     <button class="nav-item" data-page="stats" onclick="showPage('stats',this)"><span>📈</span>習慣・統計</button>
     <button class="nav-item" data-page="calendar" onclick="showPage('calendar',this)"><span>📆</span>カレンダー</button>
     <button class="nav-item" onclick="openSettings()"><span>🛠️</span>設定</button>
-    <button class="nav-item" onclick="openHelp()"><span>📖</span>使い方ガイド</button>
   </div>
   <div class="nav-section" style="margin-top:8px">
     <div class="nav-label">カテゴリ</div>
@@ -1034,7 +1033,6 @@
   <button class="bn-item" data-page="stats" onclick="showPage('stats',this)"><span class="bn-icon">📈</span>統計</button>
   <button class="bn-item" data-page="calendar" onclick="showPage('calendar',this)"><span class="bn-icon">📆</span>カレンダー</button>
   <button class="bn-item" onclick="openSettings()"><span class="bn-icon">🛠️</span>設定</button>
-  <button class="bn-item" onclick="openHelp()"><span class="bn-icon">📖</span>ガイド</button>
 </nav>
 
 <!-- Add Task Modal -->
@@ -1529,17 +1527,6 @@
       <div class="settings-accordion-body" id="overdueAccordion">
         <div id="overdueTaskList"></div>
       </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-section-title">ヘルプ</div>
-      <button class="settings-btn" onclick="closeSettings();openHelp()">
-        <span class="sb-icon">📖</span>
-        <div class="sb-text">
-          <div>使い方ガイド</div>
-          <div class="sb-sub">機能の説明・操作方法を確認する</div>
-        </div>
-      </button>
     </div>
 
     <div class="settings-section">
@@ -4929,7 +4916,7 @@ const TUT_STEPS = [
   { icon:'🔔', title:'通知リマインダー',
     desc:'締め切り3日前から通知が届きます。\nブラウザの「通知を許可」で\nリマインダーを有効化しましょう。', page:null },
   { icon:'✅', title:'準備完了！',
-    desc:'まずは「時間割」から授業を\n登録してみましょう。\nデータはブラウザに自動保存されます。', page:'timetable' }
+    desc:'まずは「時間割」から授業を\n登録してみましょう。\n\n画面上部の ？ボタン からいつでも\nこの使い方ガイドを確認できます。', page:null }
 ];
 
 let _tutStep = 0;

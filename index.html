@@ -508,6 +508,36 @@
   .tut-skip:hover{color:var(--text)}
   .tut-hl{animation:tutHL 1.6s ease-in-out 3}
   @keyframes tutHL{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.6)}50%{box-shadow:0 0 0 8px rgba(99,102,241,0)}}
+  /* ── HELP MODAL ── */
+  .help-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px;position:sticky;top:-20px;background:var(--surface);z-index:2;padding-top:4px}
+  .help-tabs::-webkit-scrollbar{display:none}
+  .help-tab{flex-shrink:0;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap}
+  .help-tab.act{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .help-sec{display:none}
+  .help-sec.act{display:block;animation:fadeIn .18s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .help-h2{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .help-h3{font-size:13px;font-weight:700;margin:16px 0 7px;color:var(--accent);display:flex;align-items:center;gap:6px}
+  .help-p{font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:10px}
+  .help-ul{list-style:none;margin:0 0 12px;padding:0}
+  .help-ul li{font-size:13px;color:var(--text2);line-height:1.75;padding:2px 0 2px 16px;position:relative}
+  .help-ul li::before{content:'•';position:absolute;left:4px;color:var(--accent)}
+  .help-tip{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:9px 12px;margin:8px 0 12px;font-size:12px;color:var(--text);line-height:1.7}
+  .help-tip::before{content:'💡 '}
+  .help-note{background:rgba(249,115,22,.09);border:1px solid rgba(249,115,22,.22);border-radius:8px;padding:9px 12px;margin:8px 0 12px;font-size:12px;color:var(--text);line-height:1.7}
+  .help-note::before{content:'📌 '}
+  .help-steps{margin:10px 0 14px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .help-step{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);align-items:flex-start}
+  .help-step:last-child{border-bottom:none}
+  .help-step-n{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  .help-step-t{flex:1;font-size:13px;color:var(--text2);line-height:1.6}
+  .help-step-t b{color:var(--text)}
+  .help-kv-tbl{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+  .help-kv{display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;align-items:baseline}
+  .help-kv:last-child{border-bottom:none}
+  .help-kv-k{font-weight:600;color:var(--text);flex-shrink:0;min-width:90px}
+  .help-kv-v{color:var(--text2);line-height:1.55}
+  .help-badge{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
   .task-stat-card{background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
   .tsc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
   .tsc-name{font-size:14px;font-weight:600}
@@ -1474,6 +1504,17 @@
     </div>
 
     <div class="settings-section">
+      <div class="settings-section-title">ヘルプ</div>
+      <button class="settings-btn" onclick="closeSettings();openHelp()">
+        <span class="sb-icon">📖</span>
+        <div class="sb-text">
+          <div>使い方ガイド</div>
+          <div class="sb-sub">機能の説明・操作方法を確認する</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-section-title">リセット</div>
       <button class="settings-btn" onclick="closeSettings();tutReset()">
         <span class="sb-icon">🎓</span>
@@ -1495,6 +1536,247 @@
       <button class="btn-cancel" onclick="closeSettings()">閉じる</button>
     </div>
   </div><!-- /settingsModal -->
+</div>
+
+<!-- ── Help Modal ── -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h2 style="margin:0;font-size:17px">📖 使い方ガイド</h2>
+      <button onclick="closeHelp()" style="margin-left:auto;background:none;border:none;font-size:18px;color:var(--text2);cursor:pointer;padding:4px 8px">✕</button>
+    </div>
+    <div class="help-tabs">
+      <button class="help-tab act" onclick="helpTab(0)">🏡 ホーム</button>
+      <button class="help-tab" onclick="helpTab(1)">🏫 時間割</button>
+      <button class="help-tab" onclick="helpTab(2)">📋 タスク</button>
+      <button class="help-tab" onclick="helpTab(3)">📈 統計</button>
+      <button class="help-tab" onclick="helpTab(4)">📆 カレンダー</button>
+      <button class="help-tab" onclick="helpTab(5)">🔔 通知</button>
+      <button class="help-tab" onclick="helpTab(6)">🛠️ 設定</button>
+    </div>
+
+    <!-- Section 0: ホーム -->
+    <div class="help-sec act" id="hs-0">
+      <div class="help-h2">🏡 ホーム画面</div>
+      <p class="help-p">アプリを開くと最初に表示される画面です。今日の状況をひと目で把握できます。</p>
+      <div class="help-h3">📊 統計カード</div>
+      <div class="help-kv-tbl">
+        <div class="help-kv"><span class="help-kv-k">出席警告授業</span><span class="help-kv-v">欠席が上限−1以下の授業数。赤く光ったらすぐ確認を。</span></div>
+        <div class="help-kv"><span class="help-kv-k">未完了タスク</span><span class="help-kv-v">完了していないタスクの総数。</span></div>
+        <div class="help-kv"><span class="help-kv-k">期限超過</span><span class="help-kv-v">期限が切れてから2日以内のタスク数。</span></div>
+        <div class="help-kv"><span class="help-kv-k">習慣 未完了</span><span class="help-kv-v">今日まだ完了していない繰り返しタスクの数。</span></div>
+      </div>
+      <div class="help-h3">🗓️ 今日の授業・次のコマ</div>
+      <ul class="help-ul">
+        <li>今日の曜日に登録された授業が時限順に表示されます。</li>
+        <li>授業カードをタップすると、その授業の出欠・成績画面へ移動します。</li>
+        <li>現在時刻から次に始まる授業は画面上部に「次のコマ」として表示。</li>
+      </ul>
+      <div class="help-h3">✅ 今日の習慣タスク</div>
+      <ul class="help-ul">
+        <li>毎日・毎週の繰り返しタスクが最大5件表示されます。</li>
+        <li>左の丸をタップすると完了記録（時間入力）へ進みます。</li>
+        <li>タスク名タップで編集モーダルが開きます。</li>
+      </ul>
+      <div class="help-h3">📋 期限タスク一覧</div>
+      <ul class="help-ul">
+        <li>締め切りがある未完了タスクと、期限超過2日以内のタスクが表示されます。</li>
+        <li>フィルター・並び替え・検索が使えます。</li>
+        <li>タスクをタップすると詳細画面へ移動します。</li>
+      </ul>
+      <div class="help-tip">期限超過タスクは2日間ホームに表示されます。それ以降は設定の「期限超過タスク」アコーディオンで確認できます。</div>
+    </div>
+
+    <!-- Section 1: 時間割 -->
+    <div class="help-sec" id="hs-1">
+      <div class="help-h2">🏫 時間割</div>
+      <p class="help-p">授業を曜日・時限ごとに登録し、出欠と成績を管理します。</p>
+      <div class="help-h3">➕ 授業の登録</div>
+      <div class="help-steps">
+        <div class="help-step"><div class="help-step-n">1</div><div class="help-step-t">時間割タブを開き、右下の <b>＋ 授業を追加</b> をタップ</div></div>
+        <div class="help-step"><div class="help-step-n">2</div><div class="help-step-t"><b>科目名・曜日・時限・色</b> を入力（科目名は必須）</div></div>
+        <div class="help-step"><div class="help-step-n">3</div><div class="help-step-t">教員名・教室・授業URLなどを任意で入力</div></div>
+        <div class="help-step"><div class="help-step-n">4</div><div class="help-step-t"><b>保存</b> をタップして完了</div></div>
+      </div>
+      <div class="help-h3">📅 出欠管理</div>
+      <ul class="help-ul">
+        <li>授業カードの <b>出席記録</b> タブで欠席を記録できます。</li>
+        <li>欠席数が上限−1に達すると⚠️警告、上限超過で🚨エラー表示。</li>
+        <li>欠席上限は授業ごと、または設定でデフォルト値を変更できます。</li>
+        <li>出席状況は時間割・ホームのカードに自動反映されます。</li>
+      </ul>
+      <div class="help-h3">📝 成績入力</div>
+      <ul class="help-ul">
+        <li>授業詳細の <b>成績</b> タブから試験・レポート・小テストの点数を入力。</li>
+        <li>種類（試験/レポート/小テスト/出席点/その他）と点数・満点を設定できます。</li>
+        <li>入力した成績の平均・合計が自動計算されます。</li>
+      </ul>
+      <div class="help-h3">🔗 授業URL・メモ</div>
+      <ul class="help-ul">
+        <li>授業URLを登録するとカードからワンタップでLMS等にアクセス可能。</li>
+        <li>各授業にメモを残せます（授業ごとの補足情報に活用）。</li>
+      </ul>
+      <div class="help-tip">時限の開始・終了時刻は設定の「時限設定」から変更できます。</div>
+    </div>
+
+    <!-- Section 2: タスク -->
+    <div class="help-sec" id="hs-2">
+      <div class="help-h2">📋 タスク・課題</div>
+      <p class="help-p">課題・レポートなどの締め切り管理と、毎日の習慣記録ができます。</p>
+      <div class="help-h3">➕ 通常タスクの追加</div>
+      <div class="help-steps">
+        <div class="help-step"><div class="help-step-n">1</div><div class="help-step-t">タスクタブの <b>＋ タスクを追加</b> をタップ</div></div>
+        <div class="help-step"><div class="help-step-n">2</div><div class="help-step-t"><b>タスク名</b>（必須）・科目・カテゴリ・締め切り日・優先度を入力</div></div>
+        <div class="help-step"><div class="help-step-n">3</div><div class="help-step-t">通知ボタンで <b>🔔通知オン / 🔕通知オフ</b> を選択</div></div>
+        <div class="help-step"><div class="help-step-n">4</div><div class="help-step-t">必要に応じてメモを追記して <b>保存</b></div></div>
+      </div>
+      <div class="help-kv-tbl">
+        <div class="help-kv"><span class="help-kv-k">優先度</span><span class="help-kv-v">高・中・低の3段階。リストの色分けに反映。</span></div>
+        <div class="help-kv"><span class="help-kv-k">カテゴリ</span><span class="help-kv-v">授業・課題・試験・実験・就活 など。設定でカスタム追加可。</span></div>
+        <div class="help-kv"><span class="help-kv-k">通知</span><span class="help-kv-v">オフにすると自動リマインダーの対象外になります。</span></div>
+      </div>
+      <div class="help-h3">🔁 繰り返しタスク（習慣）</div>
+      <ul class="help-ul">
+        <li>繰り返し設定で <b>毎日・毎週・毎月・毎年</b> を選択するとタスクが習慣タスクになります。</li>
+        <li>完了ボタンを押すと <b>実施時間の入力</b> が求められ、統計に記録されます。</li>
+        <li>習慣タスクはホーム画面の「今日の習慣タスク」に表示されます。</li>
+        <li>毎週タスクは今週の対象曜日が来たら自動的に未完了に戻ります。</li>
+      </ul>
+      <div class="help-h3">🔍 フィルター・検索</div>
+      <ul class="help-ul">
+        <li><b>科目フィルター</b>：登録した授業で絞り込み。</li>
+        <li><b>状態フィルター</b>：未完了 / すべて を切り替え。</li>
+        <li><b>並び替え</b>：締め切り順・作成日順・科目順・名前順。</li>
+        <li><b>検索ボックス</b>：タスク名・科目名・メモで全文検索。</li>
+      </ul>
+      <div class="help-tip">削除したタスクは設定の「削除履歴」から30件まで復元できます。</div>
+    </div>
+
+    <!-- Section 3: 統計 -->
+    <div class="help-sec" id="hs-3">
+      <div class="help-h2">📈 習慣・統計</div>
+      <p class="help-p">繰り返しタスクの実績を可視化します。習慣が継続できているか一目でわかります。</p>
+      <div class="help-h3">📊 サマリーカード</div>
+      <div class="help-kv-tbl">
+        <div class="help-kv"><span class="help-kv-k">今週の合計時間</span><span class="help-kv-v">今週記録した習慣タスクの合計実施時間。</span></div>
+        <div class="help-kv"><span class="help-kv-k">今週の完了回数</span><span class="help-kv-v">今週完了した習慣タスクの回数。</span></div>
+        <div class="help-kv"><span class="help-kv-k">最長ストリーク</span><span class="help-kv-v">すべての習慣タスクの中で最も長く連続達成した日数・週数。</span></div>
+      </div>
+      <div class="help-h3">🗓️ 活動カレンダー（ヒートマップ）</div>
+      <ul class="help-ul">
+        <li>直近5週間の活動を <b>曜日×週</b> のカレンダー形式で表示。</li>
+        <li>緑色が濃いほどその日の習慣実施時間が長いことを示します。</li>
+        <li>グレーは活動なし、薄い色は未来の日付です。</li>
+        <li>各セルにカーソルを当てると日付と実施時間が表示されます。</li>
+        <li>今日のセルは <b>青い枠線</b> でハイライトされます。</li>
+      </ul>
+      <div class="help-h3">📋 タスク別詳細</div>
+      <ul class="help-ul">
+        <li>登録した習慣タスクごとに <b>完了回数・平均時間・合計時間</b> を表示。</li>
+        <li>🔥ストリーク：連続達成中の日数/週数。途切れると0にリセット。</li>
+        <li>直近14日のミニヒートマップと週別実績バーグラフも確認できます。</li>
+      </ul>
+      <div class="help-tip">繰り返しタスクがなくても統計タブは表示されます。タスクを追加すると統計が記録され始めます。</div>
+    </div>
+
+    <!-- Section 4: カレンダー -->
+    <div class="help-sec" id="hs-4">
+      <div class="help-h2">📆 カレンダー</div>
+      <p class="help-p">月間ビューで授業・タスク・イベントをまとめて確認・管理できます。</p>
+      <div class="help-h3">📅 表示内容</div>
+      <div class="help-kv-tbl">
+        <div class="help-kv"><span class="help-kv-k">授業</span><span class="help-kv-v">その曜日に登録された授業が色付きドットで表示。</span></div>
+        <div class="help-kv"><span class="help-kv-k">タスク</span><span class="help-kv-v">締め切り日のある未完了タスクがドットで表示。</span></div>
+        <div class="help-kv"><span class="help-kv-k">イベント</span><span class="help-kv-v">手動で追加した予定がカレンダー上に表示。</span></div>
+      </div>
+      <div class="help-h3">➕ イベントの追加</div>
+      <div class="help-steps">
+        <div class="help-step"><div class="help-step-n">1</div><div class="help-step-t">追加したい日付をタップ</div></div>
+        <div class="help-step"><div class="help-step-n">2</div><div class="help-step-t"><b>イベント名・時間・メモ・色</b> を入力</div></div>
+        <div class="help-step"><div class="help-step-n">3</div><div class="help-step-t"><b>保存</b> をタップ（カレンダーに即時反映）</div></div>
+      </div>
+      <div class="help-h3">🔍 日付タップで詳細確認</div>
+      <ul class="help-ul">
+        <li>日付をタップするとその日の授業・タスク・イベント一覧がパネルで表示されます。</li>
+        <li>イベントは編集・削除が可能です。</li>
+      </ul>
+      <div class="help-tip">カレンダーの「◀ ▶」で月を移動できます。今月に戻るには月名をタップしてください。</div>
+    </div>
+
+    <!-- Section 5: 通知 -->
+    <div class="help-sec" id="hs-5">
+      <div class="help-h2">🔔 通知・リマインダー</div>
+      <p class="help-p">締め切りが近いタスクや期限超過を自動で知らせます。</p>
+      <div class="help-h3">🔓 通知の許可方法</div>
+      <div class="help-steps">
+        <div class="help-step"><div class="help-step-n">1</div><div class="help-step-t">設定を開き「<b>通知を有効化</b>」ボタンをタップ</div></div>
+        <div class="help-step"><div class="help-step-n">2</div><div class="help-step-t">ブラウザの許可ダイアログで <b>「許可」</b> を選択</div></div>
+        <div class="help-step"><div class="help-step-n">3</div><div class="help-step-t">設定の通知ステータスが <b>「有効」</b> に変わればOK</div></div>
+      </div>
+      <div class="help-h3">⏰ 自動リマインダーのタイミング</div>
+      <div class="help-kv-tbl">
+        <div class="help-kv"><span class="help-kv-k">3日前・2日前</span><span class="help-kv-v">「📋 締め切りが近いタスク」として通知。</span></div>
+        <div class="help-kv"><span class="help-kv-k">前日・当日</span><span class="help-kv-v">「⚠️ 締め切りが近いタスク（緊急）」として通知。</span></div>
+        <div class="help-kv"><span class="help-kv-k">超過翌日</span><span class="help-kv-v">「🚨 期限超過タスク」として1回だけ通知。</span></div>
+      </div>
+      <div class="help-h3">🔎 今すぐ期限チェック</div>
+      <ul class="help-ul">
+        <li>設定の「今すぐ期限チェック」ボタンで手動通知を即時送信できます。</li>
+        <li>今日・明日・3日以内の締め切りタスクが通知されます（超過分は除く）。</li>
+      </ul>
+      <div class="help-h3">🔕 タスクごとの通知オフ</div>
+      <ul class="help-ul">
+        <li>タスク登録・編集画面の通知ボタンで、個別に通知をオフにできます。</li>
+        <li>通知オフのタスクは自動・手動チェックいずれの通知にも含まれません。</li>
+      </ul>
+      <div class="help-note">通知はブラウザを開いているときのみ動作します。スマホのホーム画面に追加（PWAインストール）すると、より安定して受け取れます。</div>
+    </div>
+
+    <!-- Section 6: 設定 -->
+    <div class="help-sec" id="hs-6">
+      <div class="help-h2">🛠️ 設定</div>
+      <p class="help-p">アプリの見た目・動作・データを管理します。</p>
+      <div class="help-h3">🎨 テーマ</div>
+      <ul class="help-ul">
+        <li>ライト・ダーク・システム連動の3種類から選択できます。</li>
+        <li>季節（春夏秋冬）に合わせてアクセントカラーが自動変化します。</li>
+      </ul>
+      <div class="help-h3">⏱️ 時限設定</div>
+      <ul class="help-ul">
+        <li>各時限の開始・終了時刻を変更できます。</li>
+        <li>「オンデマンド」など時間のない時限も設定可能です。</li>
+        <li>欠席の上限回数（デフォルト5回）をここで変更できます。</li>
+      </ul>
+      <div class="help-h3">🏷️ カテゴリ管理</div>
+      <ul class="help-ul">
+        <li>タスクに付けるカテゴリを追加・編集・削除できます。</li>
+        <li>カテゴリごとに色を設定するとタスクリストで色分け表示されます。</li>
+        <li>デフォルトカテゴリは非表示にできます（削除はできません）。</li>
+      </ul>
+      <div class="help-h3">📲 データ管理</div>
+      <div class="help-kv-tbl">
+        <div class="help-kv"><span class="help-kv-k">エクスポート</span><span class="help-kv-v">全データをJSONファイルに保存。バックアップや端末移行に使用。</span></div>
+        <div class="help-kv"><span class="help-kv-k">インポート</span><span class="help-kv-v">エクスポートしたJSONを読み込んでデータを復元。</span></div>
+        <div class="help-kv"><span class="help-kv-k">QRコード</span><span class="help-kv-v">スマートフォンでこのアプリにアクセスするためのQRを表示。</span></div>
+      </div>
+      <div class="help-h3">🗂️ 削除履歴</div>
+      <ul class="help-ul">
+        <li>削除した授業・タスク・繰り返しタスクを最大30件保存します。</li>
+        <li>「復元」ボタンを押すと削除したデータを元に戻せます。</li>
+      </ul>
+      <div class="help-h3">🚨 期限超過タスク</div>
+      <ul class="help-ul">
+        <li>2日を超えて期限切れのタスクをここで一覧確認できます。</li>
+        <li>何日超過しているかも表示されます。</li>
+      </ul>
+      <div class="help-note">データはすべてブラウザのlocalStorageに保存されます。ブラウザのデータを消去するとデータも消えるため、定期的なエクスポートをおすすめします。</div>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeHelp()">閉じる</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── Tutorial Overlay ── -->
@@ -4563,6 +4845,20 @@ renderSwatches();
 renderBuiltInCatNav();
 renderSidebarCustomCats();
 renderAllCatSelects();
+// ── HELP ──
+function openHelp(tabIdx=0) {
+  document.getElementById('helpModal').classList.add('show');
+  helpTab(tabIdx);
+}
+function closeHelp() {
+  document.getElementById('helpModal').classList.remove('show');
+}
+function helpTab(i) {
+  document.querySelectorAll('.help-tab').forEach((t,j)=>t.classList.toggle('act',j===i));
+  document.querySelectorAll('.help-sec').forEach((s,j)=>s.classList.toggle('act',j===i));
+  document.getElementById('helpModal').querySelector('.modal').scrollTop = 0;
+}
+
 // ── TUTORIAL ──
 const TUT_STEPS = [
   { icon:'🎓', title:'UniScheduleへようこそ！',

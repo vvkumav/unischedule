@@ -517,8 +517,13 @@
   .btn-row{display:flex;gap:8px;margin-top:18px}
   .btn-cancel{flex:1;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;cursor:pointer}
   .btn-submit{flex:2;background:var(--accent);color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
-  .color-swatch{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;padding:4px 0}
-  .swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;transition:transform .15s,box-shadow .15s;border:3px solid transparent;justify-self:center}
+  .notif-toggle{border:1.5px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;background:var(--surface2);color:var(--text);transition:all .15s}
+  .notif-toggle.notif-on{background:rgba(34,197,94,.12);border-color:#22c55e;color:#22c55e}
+  .notif-toggle.notif-off{background:var(--surface2);border-color:var(--border);color:var(--text2)}
+  .color-swatch{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 2px 6px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .color-swatch::-webkit-scrollbar{height:4px}
+  .color-swatch::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .swatch{width:26px;height:26px;flex-shrink:0;border-radius:50%;cursor:pointer;transition:transform .15s,box-shadow .15s;border:3px solid transparent}
   .swatch:hover,.swatch:active{transform:scale(1.2)}
   .swatch.selected{border-color:white;box-shadow:0 0 0 2px var(--accent2)}
 
@@ -533,6 +538,18 @@
 
   /* ── SETTINGS MODAL ── */
   .settings-section{margin-bottom:20px}
+  .settings-accordion-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:0;transition:border-color .15s}
+  .settings-accordion-hdr:hover{border-color:var(--accent)}
+  .settings-accordion-hdr .sa-title{font-size:13px;font-weight:600;color:var(--text)}
+  .settings-accordion-hdr .sa-arrow{font-size:11px;color:var(--text2);transition:transform .2s}
+  .settings-accordion-hdr.open .sa-arrow{transform:rotate(90deg)}
+  .settings-accordion-body{display:none;padding:10px 2px 2px}
+  .settings-accordion-body.open{display:block}
+  .overdue-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+  .overdue-item-info{flex:1;min-width:0}
+  .overdue-item-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .overdue-item-meta{font-size:11px;color:var(--text2);margin-top:2px}
+  .overdue-days{font-size:11px;font-weight:700;color:#ef4444;white-space:nowrap}
   /* ── CUSTOM CATEGORIES ── */
   .custom-cat-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
   .custom-cat-swatch{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
@@ -615,6 +632,11 @@
     .nav-item:hover{background:var(--surface2);color:var(--text)}
     .nav-item.active{background:var(--accent-muted);color:var(--accent2)}
     .nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .nav-cat-row{display:flex;align-items:center;gap:2px;padding-right:4px}
+    .nav-cat-row .nav-item{flex:1;min-width:0}
+    .nav-cat-del{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:3px 5px;border-radius:4px;opacity:0;transition:opacity .15s;flex-shrink:0}
+    .nav-cat-row:hover .nav-cat-del{opacity:1}
+    .nav-cat-del:hover{background:rgba(239,68,68,.15);color:#ef4444}
     .app-body{margin-left:220px;margin-bottom:0;height:calc(100vh - var(--header-h) - var(--safe-t));height:calc(100dvh - var(--header-h) - var(--safe-t))}
     .main{padding:24px}
     .stats{grid-template-columns:repeat(4,1fr);gap:12px}
@@ -677,7 +699,7 @@
 <nav class="sidebar">
   <div class="nav-section">
     <div class="nav-label">メニュー</div>
-    <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)"><span>🏡</span>ダッシュボード</button>
+    <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)"><span>🏡</span>ホーム</button>
     <button class="nav-item" data-page="timetable" onclick="showPage('timetable',this)"><span>🏫</span>時間割</button>
     <button class="nav-item" data-page="tasks" onclick="showPage('tasks',this)"><span>📋</span>タスク・課題</button>
     <button class="nav-item" data-page="stats" onclick="showPage('stats',this)"><span>📈</span>習慣・統計</button>
@@ -686,11 +708,7 @@
   </div>
   <div class="nav-section" style="margin-top:8px">
     <div class="nav-label">カテゴリ</div>
-    <button class="nav-item" onclick="filterPage('授業')"><span class="nav-dot" style="background:var(--blue)"></span>授業</button>
-    <button class="nav-item" onclick="filterPage('課題')"><span class="nav-dot" style="background:var(--orange)"></span>課題・レポート</button>
-    <button class="nav-item" onclick="filterPage('試験')"><span class="nav-dot" style="background:var(--red)"></span>試験・テスト</button>
-    <button class="nav-item" onclick="filterPage('サークル')"><span class="nav-dot" style="background:var(--purple)"></span>サークル</button>
-    <button class="nav-item" onclick="filterPage('その他')"><span class="nav-dot" style="background:var(--text2)"></span>その他</button>
+    <div id="navBuiltInCats"></div>
     <div id="navCustomCats"></div>
   </div>
 </nav>
@@ -772,7 +790,6 @@
       </div>
       <select id="taskFilter" onchange="renderTasks()">
         <option value="">すべてのカテゴリ</option>
-        <option>授業</option><option>課題</option><option>試験</option><option>サークル</option><option>その他</option>
       </select>
       <select id="statusFilter" onchange="renderTasks()">
         <option value="">すべて</option><option value="pending">未完了</option><option value="done">完了</option>
@@ -917,6 +934,11 @@
       <textarea id="ev_memo" placeholder="メモを入力" rows="2" style="resize:vertical"></textarea>
     </div>
 
+    <div class="form-row">
+      <label>通知</label>
+      <button type="button" id="ev_notif" class="notif-toggle notif-on" onclick="toggleNotifBtn('ev_notif')">🔔 通知オン</button>
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn-cancel" style="flex:1" onclick="closeCalEventModal()">キャンセル</button>
       <button class="btn-primary" style="flex:2" onclick="saveCalEvent()">保存</button>
@@ -950,15 +972,14 @@
     <div class="form-row">
       <label>タスク名 *</label>
       <div class="name-suggest-wrap">
-        <input type="text" id="t_name" placeholder="例: 統計学レポート提出" autocomplete="off"
-          oninput="showNameSuggest()" onfocus="showNameSuggest()" onblur="hideNameSuggestDelayed()">
-        <div class="name-suggest-list" id="nameSuggestList"></div>
+        <input type="text" id="t_name" placeholder="例: 統計学レポート提出" autocomplete="off">
+        <div class="name-suggest-list" id="nameSuggestList" style="display:none"></div>
       </div>
     </div>
     <div class="form-cols">
       <div class="form-row">
         <label>カテゴリ</label>
-        <select id="t_cat"><option>課題</option><option>試験</option><option>授業</option><option>サークル</option><option>その他</option></select><!-- custom cats added dynamically -->
+        <select id="t_cat"></select><!-- populated dynamically -->
       </div>
       <div class="form-row">
         <label>優先度</label>
@@ -1030,27 +1051,33 @@
         </div>
         <div class="form-row">
           <label>授業・科目</label>
-          <select id="t_classLink" onchange="onClassLinkChange('normal')"></select>
+          <div class="name-suggest-wrap">
+            <input type="text" id="t_subj" placeholder="授業名・科目名" autocomplete="off"
+              oninput="showSubjSuggest('normal')" onfocus="showSubjSuggest('normal')" onblur="hideSubjSuggestDelayed('normal')">
+            <input type="hidden" id="t_classId">
+            <div class="name-suggest-list" id="subjSuggestList"></div>
+          </div>
         </div>
-      </div>
-      <div class="form-row" id="t_subj_row" style="display:none;margin-top:6px">
-        <label>科目名（手入力）</label>
-        <input type="text" id="t_subj" placeholder="例: 統計学">
       </div>
     </div>
     <div id="subjRowRecur" style="display:none">
       <div class="form-row">
         <label>授業・科目</label>
-        <select id="t_classLink2" onchange="onClassLinkChange('recur')"></select>
-      </div>
-      <div class="form-row" id="t_subj2_row" style="display:none;margin-top:6px">
-        <label>科目名（手入力）</label>
-        <input type="text" id="t_subj2" placeholder="例: 英語">
+        <div class="name-suggest-wrap">
+          <input type="text" id="t_subj2" placeholder="授業名・科目名" autocomplete="off"
+            oninput="showSubjSuggest('recur')" onfocus="showSubjSuggest('recur')" onblur="hideSubjSuggestDelayed('recur')">
+          <input type="hidden" id="t_classId2">
+          <div class="name-suggest-list" id="subjSuggestList2"></div>
+        </div>
       </div>
     </div>
     <div class="form-row">
       <label>メモ</label>
       <textarea id="t_note" rows="2" placeholder="補足メモ..."></textarea>
+    </div>
+    <div class="form-row">
+      <label>通知</label>
+      <button type="button" id="t_notif" class="notif-toggle notif-on" onclick="toggleNotifBtn('t_notif')">🔔 通知オン</button>
     </div>
     <div class="btn-row">
       <button class="btn-cancel" onclick="closeTaskModal()">キャンセル</button>
@@ -1162,6 +1189,10 @@
     <div class="form-row">
       <label>色</label>
       <div class="color-swatch" id="colorSwatches"></div>
+    </div>
+    <div class="form-row">
+      <label>通知</label>
+      <button type="button" id="c_notif" class="notif-toggle notif-on" onclick="toggleNotifBtn('c_notif')">🔔 通知オン</button>
     </div>
     <div class="btn-row">
       <button class="btn-cancel" onclick="closeClassModal()">キャンセル</button>
@@ -1293,10 +1324,10 @@
       <div class="mobile-qr-section">
         <div class="mobile-qr-box"><div id="qrCanvas"></div></div>
         <div class="mobile-url-row">
-          <input id="mobileUrlInput" class="mobile-url-input" type="text" placeholder="URLを入力" oninput="updateQR()">
+          <input id="mobileUrlInput" class="mobile-url-input" type="text" readonly>
           <button class="add-btn" onclick="copyMobileUrl()" style="white-space:nowrap;padding:0 12px">コピー</button>
         </div>
-        <div class="mobile-url-note">同じWi-Fiに接続した状態でスキャン・URLを入力<br>localhostを実際のIPアドレスに置き換えてください</div>
+        <div class="mobile-url-note">QRコードをスキャンしてスマートフォンからアクセス</div>
       </div>
     </div>
 
@@ -1329,29 +1360,6 @@
 
     <div class="settings-section">
       <div class="settings-section-title">データ管理</div>
-      <button class="settings-btn" onclick="exportData()">
-        <span class="sb-icon">📦</span>
-        <div class="sb-text">
-          <div>データをエクスポート</div>
-          <div class="sb-sub">全データをJSONファイルで保存</div>
-        </div>
-      </button>
-      <button class="settings-btn" onclick="document.getElementById('importFile').click()">
-        <span class="sb-icon">📂</span>
-        <div class="sb-text">
-          <div>データをインポート（JSON）</div>
-          <div class="sb-sub">バックアップJSONから復元</div>
-        </div>
-      </button>
-      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-      <button class="settings-btn" onclick="document.getElementById('importHtmlFile').click()">
-        <span class="sb-icon">🗂️</span>
-        <div class="sb-text">
-          <div>旧ファイルからインポート（HTML）</div>
-          <div class="sb-sub">以前保存したHTMLファイルのデータを読み込む</div>
-        </div>
-      </button>
-      <input type="file" id="importHtmlFile" accept=".html" style="display:none" onchange="importFromHtml(event)">
       <button class="settings-btn" onclick="closeSettings();openTransferModal('export')">
         <span class="sb-icon">📲</span>
         <div class="sb-text">
@@ -1391,26 +1399,46 @@
     </div>
 
     <div class="settings-section">
-      <div class="settings-section-title">🏷️ カテゴリ管理</div>
-      <div id="customCatList"></div>
-      <div class="custom-cat-add">
-        <input type="text" id="newCatName" placeholder="カテゴリ名" maxlength="20">
-        <input type="color" id="newCatColor" value="#6366f1" title="色を選択">
-        <button class="custom-cat-add-btn" onclick="addCustomCategory()">＋ 追加</button>
+      <div class="settings-accordion-hdr" onclick="toggleAccordion('catAccordion')">
+        <span class="sa-title">🏷️ カテゴリ管理</span>
+        <span class="sa-arrow">▶</span>
       </div>
-      <div style="font-size:11px;color:var(--text2);margin-top:6px">カレンダー・統計・タスク一覧で表示される色が適用されます</div>
+      <div class="settings-accordion-body" id="catAccordion">
+        <div id="customCatList"></div>
+        <div class="custom-cat-add">
+          <input type="text" id="newCatName" placeholder="カテゴリ名" maxlength="20">
+          <button class="custom-cat-add-btn" onclick="addCustomCategory()">＋ 追加</button>
+        </div>
+        <div class="color-swatch" id="catColorSwatches" style="margin-top:10px"></div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px">カレンダー・統計・タスク一覧で表示される色が適用されます</div>
+      </div>
     </div>
 
     <div class="settings-section">
-      <div class="settings-section-title">🗂️ 削除履歴</div>
-      <div id="deletionHistoryList"></div>
-      <button class="settings-btn" onclick="clearDeletionHistory()" style="color:var(--text2)">
-        <span class="sb-icon">🗑️</span>
-        <div class="sb-text">
-          <div>履歴をすべて消去</div>
-          <div class="sb-sub">削除履歴を空にする（最大50件保存）</div>
-        </div>
-      </button>
+      <div class="settings-accordion-hdr" onclick="toggleAccordion('histAccordion')">
+        <span class="sa-title">🗂️ 削除履歴</span>
+        <span class="sa-arrow">▶</span>
+      </div>
+      <div class="settings-accordion-body" id="histAccordion">
+        <div id="deletionHistoryList"></div>
+        <button class="settings-btn" onclick="clearDeletionHistory()" style="color:var(--text2);margin-top:6px">
+          <span class="sb-icon">🗑️</span>
+          <div class="sb-text">
+            <div>履歴をすべて消去</div>
+            <div class="sb-sub">削除履歴を空にする（最大50件保存）</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-accordion-hdr" onclick="toggleAccordion('overdueAccordion');renderOverdueList()">
+        <span class="sa-title">🚨 期限超過タスク</span>
+        <span class="sa-arrow">▶</span>
+      </div>
+      <div class="settings-accordion-body" id="overdueAccordion">
+        <div id="overdueTaskList"></div>
+      </div>
     </div>
 
     <div class="settings-section">
@@ -1435,15 +1463,15 @@
 const DAYS = ['月','火','水','木','金','土','日'];
 const DEFAULT_PERIOD_TIMES = ['8:45','10:45','13:15','15:15','17:10','オンデマンド','オンデマンド'];
 const CLASS_COLORS = [
-  '#ef4444','#f43f5e','#ec4899','#d946ef','#a855f7','#8b5cf6','#6366f1','#3b82f6',
-  '#0ea5e9','#06b6d4','#14b8a6','#10b981','#22c55e','#2ecc71','#84cc16','#eab308',
-  '#f59e0b','#f97316','#ea580c','#dc2626','#be185d','#7c3aed','#1d4ed8','#0f766e'
+  '#ef4444','#f97316','#eab308','#84cc16','#22c55e','#14b8a6','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e',
+  '#b91c1c','#c2410c','#a16207','#4d7c0f','#15803d','#0f766e','#0e7490','#1d4ed8','#4338ca','#7e22ce','#be185d','#be123c'
 ];
 const DOW_MAP = [1,2,3,4,5,6,0];
 const GRADE_TYPE_LABELS = {exam:'試験',report:'レポート',quiz:'小テスト',attendance:'出席点',other:'その他'};
 
 // ── STATE ──
 let selectedColor = CLASS_COLORS[0];
+let selectedCatColor = CLASS_COLORS[0];
 let calYear, calMonth;
 let editTaskId = null;
 let pendingTimeId = null;
@@ -1457,6 +1485,10 @@ const sto = {
   set:(k,v)=>{ try{localStorage.setItem('uni_'+k,JSON.stringify(v))}catch{} }
 };
 
+// ── XSS ESCAPE ──
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const safeUrl = u => /^https?:\/\//i.test(u||'') ? u : '#';
+
 let tasks = sto.get('tasks',[]);
 let recurringTasks = sto.get('recurringTasks',[]);
 let classes = sto.get('classes',[]);
@@ -1468,6 +1500,13 @@ let absLimitCount  = sto.get('absLimitCount', 5);
 let customCategories = sto.get('customCats', []);
 let calEvents = sto.get('calEvents', []);
 const EV_COLORS = ['#6366f1','#3b82f6','#22c55e','#f97316','#ef4444','#a855f7','#ec4899','#eab308','#14b8a6','#64748b'];
+const BUILT_IN_CATS = [
+  {name:'課題', label:'課題',   color:'var(--orange)'},
+  {name:'試験', label:'テスト', color:'var(--red)'},
+  {name:'サークル', label:'サークル', color:'var(--purple)'},
+  {name:'その他', label:'その他', color:'var(--text2)'},
+];
+let hiddenBuiltInCats = sto.get('hiddenBuiltInCats', []);
 let _calClickedDate = '';
 let _evDates = [];
 let _evColor = EV_COLORS[0];
@@ -1711,8 +1750,8 @@ function renderDashboard() {
       const meta = isNow ? `${ts}〜` : `${ts}〜 (あと${startMin-nowMin}分)`;
       nextEl = `<div class="ts-next">
         <span class="ts-next-tag">${tag}</span>
-        <span class="ts-next-name">${c.name}</span>
-        <span class="ts-next-meta">${meta}${c.room?' · '+c.room:''}</span>
+        <span class="ts-next-name">${esc(c.name)}</span>
+        <span class="ts-next-meta">${esc(meta)}${c.room?' · '+esc(c.room):''}</span>
       </div>`;
       break;
     }
@@ -1752,7 +1791,7 @@ function renderDashboard() {
         const done = isCompletedNow(rt);
         return `<div class="dh-item">
           <div class="dh-check${done?' checked':''}" onclick="dashToggleRecurring(${rt.id})"></div>
-          <div class="dh-info">
+          <div class="dh-info" style="cursor:pointer" onclick="openEditRecurring(${rt.id})">
             <div class="dh-name${done?' done':''}">${rt.name}</div>
             <div class="dh-badge">${getRecurLabel(rt)}${rt.subj?' · '+rt.subj:''}</div>
           </div>
@@ -1768,13 +1807,13 @@ function renderDashboard() {
         const absCount = attendance.filter(a=>a.classId===c.id).length;
         const lim = c.absLimit ?? absLimitCount;
         const absWarnCls = absCount >= lim ? 'color:var(--red)' : absCount >= lim-1 ? 'color:var(--orange)' : 'color:var(--text2)';
-        return `<div class="tl-item" style="border-left-color:${c.color}">
+        return `<div class="tl-item" style="border-left-color:${c.color};cursor:pointer" onclick="openClassFromDash(${c.id})">
           <div class="tl-date">${periodSettings[c.period]||''}</div>
-          <div style="flex:1"><div class="tl-title">${c.name}</div>
-            <div class="tl-sub">${c.room||''} ${c.teacher?'· '+c.teacher:''}
+          <div style="flex:1"><div class="tl-title">${esc(c.name)}</div>
+            <div class="tl-sub">${esc(c.room||'')} ${c.teacher?'· '+esc(c.teacher):''}
               ${absCount>0?`<span style="${absWarnCls};font-size:10px"> 欠席${absCount}/${lim}回</span>`:''}
             </div>
-            ${c.url?`<a href="${c.url}" target="_blank" style="font-size:10px;color:var(--accent2)">🔗 リンク</a>`:''}
+            ${c.url?`<a href="${safeUrl(c.url)}" target="_blank" style="font-size:10px;color:var(--accent2)">🔗 リンク</a>`:''}
           </div>
         </div>`;
       }).join('');
@@ -1809,7 +1848,7 @@ function renderUpcomingDash() {
   else if (sortF==='name')    list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
 
   if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="es-icon">${q?'🔍':'✨'}</div>${q?`「${rawQ}」に一致するタスクなし`:'期限のあるタスクなし'}</div>`;
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">${q?'🔍':'✨'}</div>${q?`「${esc(rawQ)}」に一致するタスクなし`:'期限のあるタスクなし'}</div>`;
     return;
   }
   el.innerHTML = list.map(t => {
@@ -1864,12 +1903,12 @@ function renderTimetable() {
       const cls=classes.find(c=>c.day===di&&c.period===pi&&c.year===selYear&&c.term===selTerm);
       if(cls){
         const absCount = attendance.filter(a=>a.classId===cls.id).length;
-        const urlBtn = cls.url ? `<a class="cb-url-btn" href="${cls.url}" target="_blank" title="授業リンク">🔗</a>` : '';
+        const urlBtn = cls.url ? `<a class="cb-url-btn" href="${safeUrl(cls.url)}" target="_blank" title="授業リンク">🔗</a>` : '';
         html+=`<div class="tt-cell" onclick="goToAttDetail(${cls.id})" style="cursor:pointer"><div class="class-block" style="background:${cls.color}22;color:${cls.color};border:1px solid ${cls.color}44">
           <button class="cb-del" onclick="event.stopPropagation();deleteClass(${cls.id})">×</button>
           <div class="cb-top">
-            <div class="cb-name">${cls.name}</div>
-            <div class="cb-room">${cls.room||''}</div>
+            <div class="cb-name">${esc(cls.name)}</div>
+            <div class="cb-room">${esc(cls.room||'')}</div>
           </div>
           <div class="cb-bottom">
             <div class="cb-absent"><span class="cb-absent-count">${absCount}欠</span></div>
@@ -1975,7 +2014,7 @@ function buildAttTabsHtml() {
     const periodLabel = c.period <= 4 ? `${c.period + 1}限` : 'OD';
     return `<button class="att-class-tab ${isActive ? 'active' : ''}" onclick="switchAttClass(${c.id})">
       <div class="act-dot" style="background:${c.color}"></div>
-      <div class="act-name">${c.name}</div>
+      <div class="act-name">${esc(c.name)}</div>
       <div class="act-period">${dayLabel}・${periodLabel}</div>
       ${absCount > 0
         ? `<div class="act-badge">${absCount}欠</div>`
@@ -2023,9 +2062,9 @@ function buildAttDetailHtml(cls) {
       <div>
         <div class="att-detail-name">
           <span style="width:12px;height:12px;border-radius:50%;background:${cls.color};display:inline-block;flex-shrink:0"></span>
-          ${cls.name}
+          ${esc(cls.name)}
         </div>
-        <div class="att-detail-sub">${[cls.room, cls.teacher].filter(Boolean).join(' · ')}</div>
+        <div class="att-detail-sub">${[cls.room, cls.teacher].filter(Boolean).map(esc).join(' · ')}</div>
       </div>
       <button class="icon-btn" onclick="openEditClass(${cls.id})" title="授業を編集" style="font-size:14px;padding:5px 9px">🖊️</button>
     </div>
@@ -2092,7 +2131,7 @@ function buildClassTaskSectionHtml(cls) {
     const dueLabel = t.due
       ? `<span class="class-task-due${overdue?' overdue':soon?' soon':''}">${fmtDateFull(t.due)}${overdue?' 超過':soon?` あと${daysUntil(t.due)}日`:''}</span>`
       : '';
-    const catBadge = `<span class="class-task-cat">${t.cat||'タスク'}</span>`;
+    const catBadge = `<span class="class-task-cat">${esc(t.cat||'タスク')}</span>`;
     return `
       <div class="class-task-item">
         <button class="class-task-check${t.done?' checked':''}"
@@ -2101,7 +2140,7 @@ function buildClassTaskSectionHtml(cls) {
           ${t.done?'✓':''}
         </button>
         <div class="class-task-body">
-          <div class="class-task-name${t.done?' done':''}">${t.name}</div>
+          <div class="class-task-name${t.done?' done':''}">${esc(t.name)}</div>
           <div class="class-task-meta">${catBadge}${dueLabel}</div>
         </div>
         <button class="class-task-edit" onclick="openEditTask(${t.id})" title="編集">🖊️</button>
@@ -2126,7 +2165,7 @@ function buildClassTaskSectionHtml(cls) {
               ${c.minutes?`<span class="ct-hist-min">⏱${fmtMin(c.minutes)}</span>`:''}
               <span class="ct-hist-memo${c.memo?'':' empty'}"
                 onclick="openEditMemo(${rt.id},'${c.date}')"
-                title="メモを編集">${c.memo||'メモを追加…'}</span>
+                title="メモを編集">${esc(c.memo||'メモを追加…')}</span>
             </div>`).join('')}
         </div>
       </div>` : '';
@@ -2250,7 +2289,7 @@ function renderGrades() {
             <div class="grade-score" style="color:${col}">${g.score}<span style="font-size:12px;color:var(--text2)">/${g.maxScore}</span></div>
             <div class="grade-info">
               <div class="grade-type">${GRADE_TYPE_LABELS[g.type]||g.type} ${g.date?'・'+fmtDate(g.date):''}</div>
-              ${g.note?`<div class="grade-note">${g.note}</div>`:''}
+              ${g.note?`<div class="grade-note">${esc(g.note)}</div>`:''}
             </div>
             <span style="font-size:12px;color:${col};font-weight:700;min-width:36px;text-align:right">${pct}%</span>
             <button class="grade-del" onclick="deleteGrade(${g.id})">🗑</button>
@@ -2260,7 +2299,7 @@ function renderGrades() {
 
     return `<div class="grade-card">
       <div class="grade-header">
-        <div class="grade-name"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cls.color};margin-right:4px"></span>${cls.name}</div>
+        <div class="grade-name"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cls.color};margin-right:4px"></span>${esc(cls.name)}</div>
         ${avg?`<span style="font-size:16px;font-weight:700;color:var(--accent2)">${avg}%</span>`:''}
       </div>
       <div class="grade-entries">${entriesHtml}</div>
@@ -2273,7 +2312,7 @@ function renderGrades() {
 
 function openGradeModal(preClassId) {
   const sel = document.getElementById('g_class');
-  sel.innerHTML = classes.map(c=>`<option value="${c.id}" ${c.id===preClassId?'selected':''}>${c.name}</option>`).join('');
+  sel.innerHTML = classes.map(c=>`<option value="${c.id}" ${c.id===preClassId?'selected':''}>${esc(c.name)}</option>`).join('');
   document.getElementById('g_score').value = '';
   document.getElementById('g_max').value = '100';
   document.getElementById('g_type').value = 'exam';
@@ -2371,13 +2410,7 @@ function renderTasks() {
     : emptyDone;
 }
 function refreshTaskFilterSelect() {
-  const sel = document.getElementById('taskFilter');
-  if (!sel) return;
-  const cur = sel.value;
-  const builtIn = ['授業','課題','試験','サークル','その他'];
-  const all = [...builtIn, ...customCategories.map(c=>c.name)];
-  sel.innerHTML = `<option value="">すべてのカテゴリ</option>`
-    + all.map(n=>`<option${n===cur?' selected':''}>${n}</option>`).join('');
+  renderAllCatSelects();
 }
 function updateSearchClear() {
   const val = document.getElementById('taskSearch')?.value || '';
@@ -2390,9 +2423,11 @@ function clearTaskSearch() {
 }
 
 function hlText(text, q) {
-  if (!q || !text) return text || '';
-  const safe = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  return text.replace(new RegExp(`(${safe})`,'gi'),'<mark class="search-highlight">$1</mark>');
+  if (!text) return '';
+  const escaped = esc(text);
+  if (!q) return escaped;
+  const safeQ = esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return escaped.replace(new RegExp(`(${safeQ})`,'gi'),'<mark class="search-highlight">$1</mark>');
 }
 
 function rtHTML(rt, searchF='') {
@@ -2495,6 +2530,7 @@ function openEditTask(id) {
   const el2 = document.getElementById('t_classLink2'); if(el2) el2.value='';
   const sr2 = document.getElementById('t_subj2_row'); if(sr2) sr2.style.display='none';
   const inp2 = document.getElementById('t_subj2'); if(inp2) inp2.value='';
+  setNotifBtn('t_notif', t.notif !== false);
   onRecurChange();
   document.getElementById('taskModal').classList.add('show');
 }
@@ -2532,6 +2568,7 @@ function openEditRecurring(id) {
     if (rt.yearMonth) document.getElementById('t_yearMonth').value = rt.yearMonth;
     document.getElementById('t_yearDay').value = rt.yearDay || '';
   }
+  setNotifBtn('t_notif', rt.notif !== false);
   document.getElementById('taskModal').classList.add('show');
 }
 
@@ -2682,10 +2719,15 @@ function renderCalendar() {
   const td=today();
   for(let d=1;d<=last.getDate();d++){
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const taskEvts=tasks.filter(t=>t.due===ds).map(t=>`<div class="cal-event" style="background:${catBg(t.cat)};color:${catColor(t.cat)}" onclick="event.stopPropagation();openTaskDetail(${t.id})">${t.name}</div>`).join('');
+    const taskEvts=tasks.filter(t=>t.due===ds).map(t=>{
+      const linkedCls = t.classId ? classes.find(c=>c.id===t.classId) : null;
+      const bg  = linkedCls ? linkedCls.color+'33' : catBg(t.cat);
+      const col = linkedCls ? linkedCls.color       : catColor(t.cat);
+      return `<div class="cal-event" style="background:${bg};color:${col}" onclick="event.stopPropagation();openTaskDetail(${t.id})">${esc(t.name)}</div>`;
+    }).join('');
     const calEvts=calEvents.filter(e=>e.dates.includes(ds)).map(e=>{
       const timeLbl=(!e.noTime&&e.sh!=null)?` ${e.sh}:${String(e.sm).padStart(2,'0')}`:'' ;
-      return `<div class="cal-event-item" style="background:${e.color}22;color:${e.color};border-left:2px solid ${e.color}" onclick="event.stopPropagation();openCalEventDetail(${e.id})">${timeLbl?timeLbl+' ':''}${e.name}</div>`;
+      return `<div class="cal-event-item" style="background:${e.color}22;color:${e.color};border-left:2px solid ${e.color}" onclick="event.stopPropagation();openCalEventDetail(${e.id})">${timeLbl?timeLbl+' ':''}${esc(e.name)}</div>`;
     }).join('');
     html+=`<div class="cal-day ${ds===td?'today':''}" onclick="openDayAction('${ds}')"><div class="cal-dn">${d}</div>${taskEvts}${calEvts}</div>`;
   }
@@ -2843,6 +2885,7 @@ function openCalEventModal(defaultDate, editId) {
       document.getElementById('ev_em').value = ev.em;
     }
     buildEvColorRow(ev.color);
+    setNotifBtn('ev_notif', ev.notif !== false);
   } else {
     document.getElementById('ev_name').value = '';
     document.getElementById('ev_memo').value = '';
@@ -2858,6 +2901,7 @@ function openCalEventModal(defaultDate, editId) {
     document.getElementById('ev_eh').value = 10;
     document.getElementById('ev_em').value = 0;
     buildEvColorRow();
+    setNotifBtn('ev_notif', true);
   }
   renderEvMiniCal();
   renderEvDateChips();
@@ -2889,7 +2933,7 @@ function showEvNameSuggest() {
   list.innerHTML = hits.map((e, i) =>
     `<div class="name-suggest-item" data-evsi="${i}" onmousedown="_pickEvSuggest(this)" ontouchstart="_pickEvSuggest(this)">
       <div class="name-suggest-dot" style="background:${e.color||'#6366f1'}"></div>
-      <span class="name-suggest-label">${e.name.replace(/</g,'&lt;')}</span>
+      <span class="name-suggest-label">${esc(e.name)}</span>
     </div>`
   ).join('');
   // stash names for retrieval
@@ -2933,6 +2977,7 @@ function saveCalEvent() {
     sm: noTime ? null : parseInt(document.getElementById('ev_sm').value),
     eh: noTime ? null : parseInt(document.getElementById('ev_eh').value),
     em: noTime ? null : parseInt(document.getElementById('ev_em').value),
+    notif: getNotifBtn('ev_notif'),
   };
   if (_editEvId) {
     const idx = calEvents.findIndex(e=>e.id===_editEvId);
@@ -2992,14 +3037,14 @@ function openTaskDetail(id) {
 
   document.getElementById('taskDetailContent').innerHTML = `
     ${t.done ? '<div class="td-done-bar">✅ 完了済みのタスクです</div>' : ''}
-    <div class="td-name">${t.name}</div>
+    <div class="td-name">${esc(t.name)}</div>
     <div class="td-badges">
       ${catBadgeHTML(t.cat)}
       <span class="badge priority-${t.pri}">${{high:'優先度：高',mid:'優先度：中',low:'優先度：低'}[t.pri]}</span>
     </div>
     ${t.due ? `<div class="td-row"><span class="td-icon">⏰</span><div><div class="td-label">期限</div><div class="td-val" style="${dateColor}">${dateLbl}</div></div></div>` : ''}
-    ${t.subj ? `<div class="td-row"><span class="td-icon">📖</span><div><div class="td-label">科目</div><div class="td-val">${t.subj}</div></div></div>` : ''}
-    ${t.note ? `<div class="td-label" style="margin-bottom:6px">メモ</div><div class="td-note">${t.note}</div>` : ''}
+    ${t.subj ? `<div class="td-row"><span class="td-icon">📖</span><div><div class="td-label">科目</div><div class="td-val">${esc(t.subj)}</div></div></div>` : ''}
+    ${t.note ? `<div class="td-label" style="margin-bottom:6px">メモ</div><div class="td-note">${esc(t.note)}</div>` : ''}
     <div class="td-action-row">
       <button class="td-btn td-btn-edit" onclick="closeTaskDetail();openEditTask(${t.id})">🖊️ 編集</button>
       <button class="td-btn ${t.done ? 'td-btn-undone' : 'td-btn-done'}" onclick="toggleTask(${t.id});closeTaskDetail();renderCalendar()">${t.done ? '↩ 未完了に戻す' : '✅ 完了にする'}</button>
@@ -3026,9 +3071,9 @@ function renderUpcoming() {
     const lbl=diff<0?`${-diff}日超過`:diff===0?'今日締め切り':`あと${diff}日`;
     return `<div class="tl-item" style="border-left-color:${priColor(t.pri)}">
       <div class="tl-date ${cls}">${fmtDate(t.due)}<br><strong>${lbl}</strong></div>
-      <div style="flex:1"><div class="tl-title">${t.name}</div>
-        <div class="tl-sub">${t.subj?t.subj+' / '+'':''}${catBadgeHTML(t.cat)} <span class="badge priority-${t.pri}">${{high:'高',mid:'中',low:'低'}[t.pri]}</span></div>
-        ${t.note?`<div class="tl-sub" style="margin-top:4px">${t.note}</div>`:''}
+      <div style="flex:1"><div class="tl-title">${esc(t.name)}</div>
+        <div class="tl-sub">${t.subj?esc(t.subj)+' / ':''}${catBadgeHTML(t.cat)} <span class="badge priority-${t.pri}">${{high:'高',mid:'中',low:'低'}[t.pri]}</span></div>
+        ${t.note?`<div class="tl-sub" style="margin-top:4px">${esc(t.note)}</div>`:''}
       </div>
       <button class="task-del" style="opacity:1" onclick="deleteTask(${t.id});renderUpcoming()">🗑</button>
     </div>`;
@@ -3039,51 +3084,29 @@ function renderUpcoming() {
 // ── CLASS LINK HELPERS ──
 let _addTaskReturnToTT = false;
 
-function renderTaskClassOptions() {
-  const opts = '<option value="">なし</option>' +
-    classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('') +
-    '<option value="__custom__">その他（手入力）</option>';
-  ['t_classLink','t_classLink2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = opts;
-  });
-}
-
-function onClassLinkChange(which) {
-  const selId = which === 'normal' ? 't_classLink' : 't_classLink2';
-  const rowId = which === 'normal' ? 't_subj_row' : 't_subj2_row';
-  const val = document.getElementById(selId)?.value || '';
-  document.getElementById(rowId).style.display = val === '__custom__' ? '' : 'none';
-}
+function renderTaskClassOptions() { /* 統合テキスト入力に移行したため不要 */ }
+function onClassLinkChange() { /* 統合テキスト入力に移行したため不要 */ }
 
 function getTaskSubjAndClass(which) {
-  const selId = which === 'normal' ? 't_classLink' : 't_classLink2';
-  const inpId = which === 'normal' ? 't_subj' : 't_subj2';
-  const val = document.getElementById(selId)?.value || '';
-  if (val && val !== '__custom__') {
-    const c = classes.find(cl => cl.id === parseInt(val));
-    return { classId: parseInt(val), subj: c ? c.name : '' };
-  }
-  return { classId: null, subj: (document.getElementById(inpId)?.value || '').trim() };
+  const inpId = which === 'normal' ? 't_subj'    : 't_subj2';
+  const idId  = which === 'normal' ? 't_classId' : 't_classId2';
+  const classId = parseInt(document.getElementById(idId)?.value || '') || null;
+  const subj = (document.getElementById(inpId)?.value || '').trim();
+  return { classId, subj };
 }
 
 function setupClassLinkForEdit(classId, subj, which) {
-  renderTaskClassOptions();
-  const selId = which === 'normal' ? 't_classLink' : 't_classLink2';
-  const rowId = which === 'normal' ? 't_subj_row' : 't_subj2_row';
-  const inpId = which === 'normal' ? 't_subj' : 't_subj2';
-  const sel = document.getElementById(selId);
-  const inp = document.getElementById(inpId);
-  if (classId && classes.find(c => c.id === classId)) {
-    sel.value = classId;
-    document.getElementById(rowId).style.display = 'none';
-  } else if (subj) {
-    sel.value = '__custom__';
-    if (inp) inp.value = subj;
-    document.getElementById(rowId).style.display = '';
+  const inpId = which === 'normal' ? 't_subj'    : 't_subj2';
+  const idId  = which === 'normal' ? 't_classId' : 't_classId2';
+  const inp   = document.getElementById(inpId);
+  const idInp = document.getElementById(idId);
+  if (classId) {
+    const cls = classes.find(c => c.id === classId);
+    if (inp)   inp.value   = cls ? cls.name : (subj || '');
+    if (idInp) idInp.value = classId;
   } else {
-    sel.value = '';
-    document.getElementById(rowId).style.display = 'none';
+    if (inp)   inp.value   = subj || '';
+    if (idInp) idInp.value = '';
   }
 }
 
@@ -3144,20 +3167,19 @@ function openAddTask() {
   _addTaskReturnToTT=false;
   document.getElementById('taskModalTitle').textContent='タスク追加';
   ['t_name','t_due','t_note'].forEach(id=>document.getElementById(id).value='');
-  populateCatSelect('t_cat','課題');
+  populateCatSelect('t_cat', getActiveBuiltInCats()[0]?.name || '');
   document.getElementById('t_pri').value='mid';
   document.getElementById('t_recur').value='none';
-  // 授業リンク リセット
-  renderTaskClassOptions();
-  ['t_classLink','t_classLink2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['t_subj_row','t_subj2_row'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  // 科目・授業リンク リセット
   ['t_subj','t_subj2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['t_classId','t_classId2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   // サブ設定リセット
   document.querySelectorAll('.wd-btn').forEach(b=>b.classList.remove('selected'));
   document.getElementById('t_monthDay').value='';
   document.getElementById('t_lastDay').checked=false;
   document.getElementById('t_yearMonth').value='4';
   document.getElementById('t_yearDay').value='';
+  setNotifBtn('t_notif', true);
   onRecurChange();
   document.getElementById('taskModal').classList.add('show');
 }
@@ -3165,70 +3187,88 @@ function openAddTask() {
 function openAddTaskForClass(classId) {
   openAddTask();
   _addTaskReturnToTT = true;
-  // 通常タスク側のセレクトを該当授業に設定
-  const sel = document.getElementById('t_classLink');
-  if (sel) sel.value = classId;
-  const sel2 = document.getElementById('t_classLink2');
-  if (sel2) sel2.value = classId;
-  // 手入力行を非表示
-  ['t_subj_row','t_subj2_row'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const cls = classes.find(c => c.id === classId);
+  if (!cls) return;
+  ['t_subj','t_subj2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=cls.name;});
+  ['t_classId','t_classId2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=classId;});
 }
-// ── タスク名サジェスト ──────────────────────────────────
-let _suggestBlurTimer = null;
+// ── 科目サジェスト ──────────────────────────────────
+const _subjBlurTimer = {normal: null, recur: null};
 
-function showNameSuggest() {
-  const inp = document.getElementById('t_name');
-  const list = document.getElementById('nameSuggestList');
+function showSubjSuggest(which) {
+  const inpId  = which === 'normal' ? 't_subj'          : 't_subj2';
+  const listId = which === 'normal' ? 'subjSuggestList'  : 'subjSuggestList2';
+  const idId   = which === 'normal' ? 't_classId'        : 't_classId2';
+  const inp  = document.getElementById(inpId);
+  const list = document.getElementById(listId);
   if (!inp || !list) return;
   const q = inp.value.toLowerCase().trim();
-  // 授業名の一覧をフィルタ
-  // 現在の学期の授業のみ対象（学期フィルタがあれば）
+  const idInp = document.getElementById(idId);
+  if (idInp) {
+    const linked = classes.find(c => c.id === parseInt(idInp.value||''));
+    if (!linked || linked.name !== inp.value.trim()) idInp.value = '';
+  }
   const { year: curY, term: curT } = getSelectedSemester();
   const semClasses = classes.filter(c => c.name && (isNaN(curY) || (c.year===curY && c.term===curT)));
-  // 重複名を除去してユニーク授業名リストを作成
-  const seen = new Set();
-  const uniq = [];
+  const seen = new Set(); const uniq = [];
   semClasses.forEach(c => { if (!seen.has(c.id)) { seen.add(c.id); uniq.push(c); } });
   const hits = uniq.filter(c => !q || c.name.toLowerCase().includes(q));
   if (!hits.length) { list.classList.remove('show'); return; }
   list.innerHTML = hits.map(c => {
-    // 曜日・時限情報をサブラベルに
     const dayNames = ['月','火','水','木','金','土','日'];
     const sub = (c.day!=null && c.period!=null) ? `${dayNames[c.day]}曜${c.period+1}限` : '';
-    return `<div class="name-suggest-item" onmousedown="selectNameSuggest(${c.id})" ontouchstart="selectNameSuggest(${c.id})">
+    return `<div class="name-suggest-item" onmousedown="selectSubjSuggest(${c.id},'${which}')" ontouchstart="selectSubjSuggest(${c.id},'${which}')">
       <div class="name-suggest-dot" style="background:${c.color||'#94a3b8'}"></div>
-      <span class="name-suggest-label">${c.name}</span>
+      <span class="name-suggest-label">${esc(c.name)}</span>
       ${sub ? `<span class="name-suggest-sub">${sub}</span>` : ''}
     </div>`;
   }).join('');
   list.classList.add('show');
 }
 
-function hideNameSuggest() {
-  const list = document.getElementById('nameSuggestList');
-  if (list) list.classList.remove('show');
+function hideSubjSuggest(which) {
+  document.getElementById(which === 'normal' ? 'subjSuggestList' : 'subjSuggestList2')?.classList.remove('show');
 }
 
-function hideNameSuggestDelayed() {
-  _suggestBlurTimer = setTimeout(hideNameSuggest, 180);
+function hideSubjSuggestDelayed(which) {
+  _subjBlurTimer[which] = setTimeout(() => hideSubjSuggest(which), 180);
 }
 
-function selectNameSuggest(classId) {
-  if (_suggestBlurTimer) { clearTimeout(_suggestBlurTimer); _suggestBlurTimer = null; }
+function selectSubjSuggest(classId, which) {
+  if (_subjBlurTimer[which]) { clearTimeout(_subjBlurTimer[which]); _subjBlurTimer[which] = null; }
   const cls = classes.find(c => c.id === classId);
   if (!cls) return;
-  // タスク名に授業名をセット
-  const inp = document.getElementById('t_name');
-  if (inp) inp.value = cls.name;
-  // 授業リンクも自動セット（通常・繰り返し両方）
-  const sel1 = document.getElementById('t_classLink');
-  if (sel1) { sel1.value = classId; onClassLinkChange('normal'); }
-  const sel2 = document.getElementById('t_classLink2');
-  if (sel2) { sel2.value = classId; onClassLinkChange('recur'); }
-  hideNameSuggest();
+  const inpId = which === 'normal' ? 't_subj'    : 't_subj2';
+  const idId  = which === 'normal' ? 't_classId' : 't_classId2';
+  const inp   = document.getElementById(inpId);
+  const idInp = document.getElementById(idId);
+  if (inp)   inp.value   = cls.name;
+  if (idInp) idInp.value = classId;
+  hideSubjSuggest(which);
 }
 
-function closeTaskModal(){document.getElementById('taskModal').classList.remove('show');hideNameSuggest();}
+function closeTaskModal(){document.getElementById('taskModal').classList.remove('show');hideSubjSuggest('normal');hideSubjSuggest('recur');}
+
+function toggleNotifBtn(id) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  const on = btn.classList.contains('notif-on');
+  btn.classList.toggle('notif-on', !on);
+  btn.classList.toggle('notif-off', on);
+  btn.textContent = on ? '🔕 通知オフ' : '🔔 通知オン';
+}
+function setNotifBtn(id, val) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  const on = val !== false;
+  btn.classList.toggle('notif-on', on);
+  btn.classList.toggle('notif-off', !on);
+  btn.textContent = on ? '🔔 通知オン' : '🔕 通知オフ';
+}
+function getNotifBtn(id) {
+  const btn = document.getElementById(id);
+  return btn ? btn.classList.contains('notif-on') : true;
+}
 
 function saveTask() {
   const name=document.getElementById('t_name').value.trim();
@@ -3238,6 +3278,7 @@ function saveTask() {
   const pri=document.getElementById('t_pri').value;
   const due=document.getElementById('t_due').value;
   const note=document.getElementById('t_note').value.trim();
+  const notif=getNotifBtn('t_notif');
   // 授業リンクを取得
   const {classId, subj} = getTaskSubjAndClass(recur==='none' ? 'normal' : 'recur');
   const returnToTT = _addTaskReturnToTT;
@@ -3245,7 +3286,7 @@ function saveTask() {
   closeTaskModal();
   try {
     if(recur!=='none'){
-      const rt={id:editTaskId||Date.now(),name,cat,pri,subj,note,classId:classId||null,recurrence:recur,completions:[]};
+      const rt={id:editTaskId||Date.now(),name,cat,pri,subj,note,classId:classId||null,recurrence:recur,notif,completions:[]};
       // 繰り返し種別ごとの追加設定
       if (recur === 'weekly') {
         const days = getWeekDays();
@@ -3271,7 +3312,7 @@ function saveTask() {
       } else recurringTasks.push(rt);
       sto.set('recurringTasks',recurringTasks);
     } else {
-      const t={id:editTaskId||Date.now(),name,cat,pri,due,subj,classId:classId||null,note,done:false};
+      const t={id:editTaskId||Date.now(),name,cat,pri,due,subj,classId:classId||null,note,notif,done:false};
       if(editTaskId){
         const idx=tasks.findIndex(x=>x.id===editTaskId);
         if(idx>=0){t.done=tasks[idx].done;tasks[idx]=t;}
@@ -3407,6 +3448,7 @@ function openEditClass(id) {
   document.getElementById('c_period').value = String(cls.period);
   selectedColor = cls.color || CLASS_COLORS[0];
   renderSwatches();
+  setNotifBtn('c_notif', cls.notif !== false);
   document.getElementById('classModal').classList.add('show');
 }
 function openAddClass() {
@@ -3417,6 +3459,7 @@ function openAddClass() {
   document.getElementById('c_day').value='0';
   renderPeriodSelect('0');
   selectedColor=CLASS_COLORS[0]; renderSwatches();
+  setNotifBtn('c_notif', true);
   document.getElementById('classModal').classList.add('show');
 }
 function openAddClassAt(day,period) {
@@ -3426,6 +3469,12 @@ function openAddClassAt(day,period) {
 }
 function goToAttDetail(id) {
   currentAttClass = id;
+  switchTTTab('att');
+}
+function openClassFromDash(id) {
+  currentAttClass = id;
+  const btn = document.querySelector('[data-page="timetable"]');
+  showPage('timetable', btn);
   switchTTTab('att');
 }
 function closeClassModal(){document.getElementById('classModal').classList.remove('show')}
@@ -3444,7 +3493,8 @@ function saveClass() {
     note:document.getElementById('c_note').value.trim(),
     totalSessions: parseInt(document.getElementById('c_sessions').value) || 15,
     absLimit: (()=>{ const v=parseInt(document.getElementById('c_abs_limit').value); return (!isNaN(v)&&v>=1)?v:null; })(),
-    color:selectedColor
+    color:selectedColor,
+    notif: getNotifBtn('c_notif')
   };
   if(!editClassId && classes.find(x=>x.day===c.day&&x.period===c.period)){
     if(!confirm('この時間には既に授業があります。上書きしますか？'))return;
@@ -3464,6 +3514,14 @@ function renderSwatches() {
   ).join('');
 }
 function selectColor(c){selectedColor=c;renderSwatches();}
+function renderCatSwatches() {
+  const el = document.getElementById('catColorSwatches');
+  if (!el) return;
+  el.innerHTML = CLASS_COLORS.map(c=>
+    `<div class="swatch ${c===selectedCatColor?'selected':''}" style="background:${c}" onclick="selectCatColor('${c}')"></div>`
+  ).join('');
+}
+function selectCatColor(c){selectedCatColor=c;renderCatSwatches();}
 
 // ── SETTINGS ──
 function renderPeriodTimeInputs() {
@@ -3755,15 +3813,48 @@ function openSettings() {
   renderPeriodTimeInputs();
   renderDeletionHistory();
   renderCustomCatList();
+  renderCatSwatches();
   const ali = document.getElementById('absLimitInput');
   if (ali) ali.value = absLimitCount;
   const raw = getPublicUrl();
   const input = document.getElementById('mobileUrlInput');
-  if (input && !input.value) input.value = raw;
+  if (input) input.value = raw;
   document.getElementById('settingsModal').classList.add('show');
   setTimeout(updateQR, 100);
 }
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show')}
+function renderOverdueList() {
+  const el = document.getElementById('overdueTaskList');
+  if (!el) return;
+  const overdue = tasks
+    .filter(t => !t.done && t.due && daysUntil(t.due) < 0)
+    .sort((a, b) => a.due < b.due ? -1 : 1);
+  if (!overdue.length) {
+    el.innerHTML = '<div class="history-empty">期限超過のタスクはありません</div>';
+    return;
+  }
+  el.innerHTML = overdue.map(t => {
+    const days = -daysUntil(t.due);
+    const d = new Date(t.due + 'T00:00:00');
+    const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+    const meta = [t.cat, t.subj].filter(Boolean).join(' · ');
+    return `<div class="overdue-item">
+      <div class="overdue-item-info">
+        <div class="overdue-item-name">${esc(t.name)}</div>
+        <div class="overdue-item-meta">${dateStr} 期限${meta ? ' · ' + esc(meta) : ''}</div>
+      </div>
+      <span class="overdue-days">${days}日超過</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleAccordion(id) {
+  const body = document.getElementById(id);
+  const hdr  = body?.previousElementSibling;
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  if (hdr) hdr.classList.toggle('open', open);
+}
 
 function updateNotifStatus() {
   const el = document.getElementById('notifStatus');
@@ -3826,6 +3917,7 @@ async function checkDeadlinesNow() {
   const DOW_MAP_N = {0:'日',1:'月',2:'火',3:'水',4:'木',5:'金',6:'土'};
   const { year: cY, term: cT } = getSelectedSemester();
   const todayClasses = classes
+    .filter(c => c.notif !== false)
     .filter(c => !isNaN(cY) ? (c.year===cY && c.term===cT) : true)
     .filter(c => c.day != null && (c.day+1)%7 === dow || (c.day===6 && dow===0) || (()=>{
       const dowMap2 = [0,1,2,3,4,5,6]; // mon=0 in data, sun=0 in JS
@@ -3842,7 +3934,7 @@ async function checkDeadlinesNow() {
 
   // ── 当日の予定 (calEvents)
   const td = TODAY;
-  const todayEvs = calEvents.filter(e => e.dates.includes(td));
+  const todayEvs = calEvents.filter(e => e.dates.includes(td) && e.notif !== false);
   for (const e of todayEvs) {
     const timeLbl = (!e.noTime && e.sh != null) ? ` ${e.sh}:${String(e.sm).padStart(2,'0')}〜` : '';
     await sendNotification(`📅 今日の予定: ${e.name}`, `${timeLbl}${e.memo||''}`.trim(), 'ev-today-'+e.id);
@@ -3850,19 +3942,18 @@ async function checkDeadlinesNow() {
   }
 
   // ── 繰り返しタスク（本日が対象日）
-  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt));
+  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt) && rt.notif !== false);
   if (todayRTs.length > 0) {
     const body = todayRTs.map(t => `・${t.name}`).join('\n');
     await sendNotification(`🔁 本日の習慣タスク (${todayRTs.length}件)`, body, 'rt-today');
     notified++;
   }
 
-  // ── 通常タスク: 今日・明日・2〜7日以内・期限超過
-  const pending = tasks.filter(t => !t.done && t.due);
+  // ── 通常タスク: 今日・明日・2〜3日以内（期限超過は除外）
+  const pending = tasks.filter(t => !t.done && t.due && t.notif !== false);
   const today   = pending.filter(t => daysUntil(t.due) === 0);
   const tomorrow = pending.filter(t => daysUntil(t.due) === 1);
-  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 7);
-  const overdue = pending.filter(t => daysUntil(t.due) < 0);
+  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 3);
 
   for (const t of today) {
     await sendNotification(`⚠️ 本日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'today-'+t.id);
@@ -3874,10 +3965,6 @@ async function checkDeadlinesNow() {
   }
   for (const t of soon) {
     await sendNotification(`📋 ${daysUntil(t.due)}日後締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'soon-'+t.id);
-    notified++;
-  }
-  for (const t of overdue) {
-    await sendNotification(`🚨 期限超過: ${t.name}`, `${-daysUntil(t.due)}日超過 / ${t.cat}${t.subj?' / '+t.subj:''}`, 'over-'+t.id);
     notified++;
   }
 
@@ -3941,6 +4028,7 @@ async function autoCheckDeadlines() {
   // ── 当日の時間割
   const { year: cY, term: cT } = getSelectedSemester();
   const todayClasses = classes
+    .filter(c => c.notif !== false)
     .filter(c => !isNaN(cY) ? (c.year===cY && c.term===cT) : true)
     .filter(c => {
       const jsDow = (c.day + 1) % 7; // c.day: 0=月→JS1, ... 5=土→JS6, 6=日→JS0
@@ -3954,7 +4042,7 @@ async function autoCheckDeadlines() {
 
   // ── 当日の予定 (calEvents)
   const td = TODAY;
-  const todayEvs = calEvents.filter(e => e.dates.includes(td));
+  const todayEvs = calEvents.filter(e => e.dates.includes(td) && e.notif !== false);
   if (todayEvs.length > 0) {
     const body = todayEvs.map(e => {
       const timeLbl = (!e.noTime && e.sh != null) ? `${e.sh}:${String(e.sm).padStart(2,'0')} ` : '';
@@ -3964,17 +4052,17 @@ async function autoCheckDeadlines() {
   }
 
   // ── 繰り返しタスク（本日が対象日）
-  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt));
+  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt) && rt.notif !== false);
   if (todayRTs.length > 0) {
     const body = todayRTs.map(t => `・${t.name}`).join('\n');
     await sendNotification(`🔁 本日の習慣タスク (${todayRTs.length}件)`, body, 'auto-rt');
   }
 
-  // ── 通常タスク: 今日〜7日以内 + 期限超過
-  const pending = tasks.filter(t => !t.done && t.due);
+  // ── 通常タスク: 今日〜3日以内 + 期限超過（超過初日のみ）
+  const pending = tasks.filter(t => !t.done && t.due && t.notif !== false);
   const urgent  = pending.filter(t => daysUntil(t.due) >= 0 && daysUntil(t.due) <= 1);
-  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 7);
-  const overdue = pending.filter(t => daysUntil(t.due) < 0);
+  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 3);
+  const overdue = pending.filter(t => daysUntil(t.due) === -1);
 
   if (urgent.length > 0) {
     const body = urgent.map(t => `・${t.name} (${daysUntil(t.due)===0?'今日':'明日'})`).join('\n');
@@ -3982,10 +4070,10 @@ async function autoCheckDeadlines() {
   }
   if (soon.length > 0) {
     const body = soon.map(t => `・${t.name} (${daysUntil(t.due)}日後)`).join('\n');
-    await sendNotification(`📋 今週締め切りのタスク (${soon.length}件)`, body, 'auto-soon');
+    await sendNotification(`📋 締め切りが近いタスク (${soon.length}件)`, body, 'auto-soon');
   }
   if (overdue.length > 0) {
-    const body = overdue.map(t => `・${t.name} (${-daysUntil(t.due)}日超過)`).join('\n');
+    const body = overdue.map(t => `・${t.name}`).join('\n');
     await sendNotification(`🚨 期限超過タスク (${overdue.length}件)`, body, 'auto-overdue');
   }
 }
@@ -4207,7 +4295,7 @@ function renderDeletionHistory() {
     return `<div class="history-item">
       <span class="history-icon">${typeIcon[h.type]||'📄'}</span>
       <div class="history-info">
-        <div class="history-name">${h.data.name||'（名称なし）'}</div>
+        <div class="history-name">${esc(h.data.name||'（名称なし）')}</div>
         <div class="history-meta">${typeLabel[h.type]||''} · ${timeStr}に削除</div>
       </div>
       <button class="history-restore" onclick="restoreItem(${h.hid})">復元</button>
@@ -4264,9 +4352,8 @@ function resetAllData() {
 function populateCatSelect(selectId, selected) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
-  const builtIn = ['課題','試験','授業','サークル','その他'];
-  const all = [...builtIn, ...customCategories.map(c=>c.name)];
-  sel.innerHTML = all.map(n=>`<option${n===selected?' selected':''}>${n}</option>`).join('');
+  const all = [...getActiveBuiltInCats().map(c=>c.name), ...customCategories.map(c=>c.name)];
+  sel.innerHTML = all.map(n=>`<option${n===selected?' selected':''}>${esc(n)}</option>`).join('');
 }
 function renderCustomCatList() {
   const el = document.getElementById('customCatList');
@@ -4278,35 +4365,71 @@ function renderCustomCatList() {
   el.innerHTML = customCategories.map(c=>`
     <div class="custom-cat-item">
       <span class="custom-cat-swatch" style="background:${c.color}"></span>
-      <span class="custom-cat-name">${c.name}</span>
+      <span class="custom-cat-name">${esc(c.name)}</span>
       <button class="custom-cat-del" onclick="deleteCustomCategory(${c.id})" title="削除">✕</button>
     </div>`).join('');
+}
+function getActiveBuiltInCats() {
+  return BUILT_IN_CATS.filter(c => !hiddenBuiltInCats.includes(c.name));
+}
+function renderBuiltInCatNav() {
+  const el = document.getElementById('navBuiltInCats');
+  if (!el) return;
+  el.innerHTML = getActiveBuiltInCats().map(c =>
+    `<div class="nav-cat-row">
+      <button class="nav-item" onclick="filterPage('${c.name}')">
+        <span class="nav-dot" style="background:${c.color}"></span>${c.label}
+      </button>
+      <button class="nav-cat-del" onclick="deleteBuiltInCat('${c.name}')" title="非表示">×</button>
+    </div>`
+  ).join('');
+}
+function deleteBuiltInCat(name) {
+  if (!hiddenBuiltInCats.includes(name)) {
+    hiddenBuiltInCats.push(name);
+    sto.set('hiddenBuiltInCats', hiddenBuiltInCats);
+  }
+  renderBuiltInCatNav();
+  renderAllCatSelects();
 }
 function renderSidebarCustomCats() {
   const el = document.getElementById('navCustomCats');
   if (!el) return;
   el.innerHTML = customCategories.map(c=>`
     <button class="nav-item" onclick="filterPage('${c.name.replace(/'/g,"\\'")}')">
-      <span class="nav-dot" style="background:${c.color}"></span>${c.name}
+      <span class="nav-dot" style="background:${c.color}"></span>${esc(c.name)}
     </button>`).join('');
+}
+function renderAllCatSelects() {
+  const activeBuiltIn = getActiveBuiltInCats().map(c => c.name);
+  const all = [...activeBuiltIn, ...customCategories.map(c => c.name)];
+  // taskFilter
+  const tf = document.getElementById('taskFilter');
+  if (tf) {
+    const cur = tf.value;
+    tf.innerHTML = '<option value="">すべてのカテゴリ</option>' +
+      all.map(n => `<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+  }
+  // t_cat (task modal)
+  const tc = document.getElementById('t_cat');
+  if (tc) {
+    const cur = tc.value;
+    tc.innerHTML = all.map(n => `<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+  }
 }
 function addCustomCategory() {
   const nameEl = document.getElementById('newCatName');
-  const colorEl = document.getElementById('newCatColor');
   const name = nameEl.value.trim();
   if (!name) { nameEl.focus(); return; }
-  const builtIn = ['授業','課題','試験','サークル','その他'];
-  if (builtIn.includes(name) || customCategories.some(c=>c.name===name)) {
-    alert('同じ名前のカテゴリが既に存在します');
-    return;
-  }
+  const allNames = [...BUILT_IN_CATS.map(c=>c.name), ...customCategories.map(c=>c.name)];
+  if (allNames.includes(name)) { alert('同じ名前のカテゴリが既に存在します'); return; }
   if (name.length > 20) { alert('カテゴリ名は20文字以内にしてください'); return; }
-  const color = colorEl.value;
-  customCategories.push({id: Date.now(), name, color});
+  customCategories.push({id: Date.now(), name, color: selectedCatColor});
   sto.set('customCats', customCategories);
   nameEl.value = '';
   renderCustomCatList();
   renderSidebarCustomCats();
+  renderAllCatSelects();
 }
 function deleteCustomCategory(id) {
   if (!confirm('このカテゴリを削除しますか？\n（既存タスクのカテゴリは変更されません）')) return;
@@ -4314,13 +4437,14 @@ function deleteCustomCategory(id) {
   sto.set('customCats', customCategories);
   renderCustomCatList();
   renderSidebarCustomCats();
+  renderAllCatSelects();
 }
 
 function hexToRgba(hex,alpha){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${alpha})`}
-function catKey(cat){return{'授業':'class','課題':'hw','試験':'exam','サークル':'club','その他':'other'}[cat]||(customCategories.some(c=>c.name===cat)?'custom':'other')}
-function catColor(cat){const m={'授業':'#3b82f6','課題':'#f97316','試験':'#ef4444','サークル':'#a855f7','その他':'#94a3b8'};if(m[cat])return m[cat];const c=customCategories.find(c=>c.name===cat);return c?c.color:'#94a3b8'}
-function catBg(cat){const m={'授業':'rgba(59,130,246,.15)','課題':'rgba(249,115,22,.15)','試験':'rgba(239,68,68,.15)','サークル':'rgba(168,85,247,.15)','その他':'rgba(148,163,184,.1)'};if(m[cat])return m[cat];const c=customCategories.find(c=>c.name===cat);return c?hexToRgba(c.color,.15):'rgba(148,163,184,.1)'}
-function catBadgeHTML(cat){const key=catKey(cat);if(key!=='custom')return`<span class="badge cat-${key}">${cat}</span>`;return`<span class="badge" style="background:${catBg(cat)};color:${catColor(cat)}">${cat}</span>`}
+function catKey(cat){return{'課題':'hw','試験':'exam','サークル':'club','その他':'other'}[cat]||(customCategories.some(c=>c.name===cat)?'custom':'other')}
+function catColor(cat){const m={'課題':'#f97316','試験':'#ef4444','サークル':'#a855f7','その他':'#94a3b8'};if(m[cat])return m[cat];const c=customCategories.find(c=>c.name===cat);return c?c.color:'#94a3b8'}
+function catBg(cat){const m={'課題':'rgba(249,115,22,.15)','試験':'rgba(239,68,68,.15)','サークル':'rgba(168,85,247,.15)','その他':'rgba(148,163,184,.1)'};if(m[cat])return m[cat];const c=customCategories.find(c=>c.name===cat);return c?hexToRgba(c.color,.15):'rgba(148,163,184,.1)'}
+function catBadgeHTML(cat){const key=catKey(cat);if(key!=='custom')return`<span class="badge cat-${key}">${esc(cat)}</span>`;return`<span class="badge" style="background:${catBg(cat)};color:${catColor(cat)}">${esc(cat)}</span>`}
 function priColor(pri){return{high:'#ef4444',mid:'#eab308',low:'#22c55e'}[pri]||'#94a3b8'}
 
 // ── INIT ──
@@ -4339,7 +4463,9 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 migrateClassTerms();
 buildSemesterSelect();
 renderSwatches();
+renderBuiltInCatNav();
 renderSidebarCustomCats();
+renderAllCatSelects();
 renderDashboard();
 registerSW().then(() => autoCheckDeadlines());
 loadEmbeddedData();

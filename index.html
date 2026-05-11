@@ -538,6 +538,14 @@
   .help-kv-k{font-weight:600;color:var(--text);flex-shrink:0;min-width:90px}
   .help-kv-v{color:var(--text2);line-height:1.55}
   .help-badge{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+  /* ── FORM REQUIRED / DETAIL ACCORDION ── */
+  .req-badge{display:inline-block;font-size:9px;font-weight:700;color:#fff;background:#ef4444;border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle;letter-spacing:.2px}
+  .form-detail-hdr{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-top:12px;font-size:13px;font-weight:600;color:var(--text2);transition:border-color .15s}
+  .form-detail-hdr:hover{border-color:var(--accent);color:var(--text)}
+  .form-detail-hdr .fda{margin-left:auto;font-size:11px;transition:transform .2s}
+  .form-detail-hdr.open .fda{transform:rotate(90deg)}
+  .form-detail-body{display:none}
+  .form-detail-body.open{display:block;padding-top:10px}
   .task-stat-card{background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
   .tsc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
   .tsc-name{font-size:14px;font-weight:600}
@@ -1034,21 +1042,13 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <h2 id="taskModalTitle">タスク追加</h2>
+
+    <!-- ── 主要項目 ── -->
     <div class="form-row">
-      <label>タスク名 *</label>
+      <label>タスク名 <span class="req-badge">必須</span></label>
       <div class="name-suggest-wrap">
         <input type="text" id="t_name" placeholder="例: 統計学レポート提出" autocomplete="off">
         <div class="name-suggest-list" id="nameSuggestList" style="display:none"></div>
-      </div>
-    </div>
-    <div class="form-cols">
-      <div class="form-row">
-        <label>カテゴリ</label>
-        <select id="t_cat"></select><!-- populated dynamically -->
-      </div>
-      <div class="form-row">
-        <label>優先度</label>
-        <select id="t_pri"><option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option></select>
       </div>
     </div>
     <div class="form-row">
@@ -1108,25 +1108,39 @@
         </div>
       </div>
     </div>
-    <div id="dueRow">
+    <!-- 期限日（通常タスクのみ表示） -->
+    <div id="dueOnlyRow" class="form-row">
+      <label>期限日</label>
+      <input type="date" id="t_due">
+    </div>
+
+    <!-- ── 詳細設定 ── -->
+    <div class="form-detail-hdr" onclick="toggleFormDetail('taskDetail')">
+      <span>⚙️ 詳細設定</span><span class="fda">▶</span>
+    </div>
+    <div class="form-detail-body" id="taskDetail">
       <div class="form-cols">
         <div class="form-row">
-          <label>期限日</label>
-          <input type="date" id="t_due">
+          <label>カテゴリ</label>
+          <select id="t_cat"></select>
         </div>
         <div class="form-row">
-          <label>授業・科目</label>
-          <div class="name-suggest-wrap">
-            <input type="text" id="t_subj" placeholder="授業名・科目名" autocomplete="off"
-              oninput="showSubjSuggest('normal')" onfocus="showSubjSuggest('normal')" onblur="hideSubjSuggestDelayed('normal')">
-            <input type="hidden" id="t_classId">
-            <div class="name-suggest-list" id="subjSuggestList"></div>
-          </div>
+          <label>優先度</label>
+          <select id="t_pri"><option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option></select>
         </div>
       </div>
-    </div>
-    <div id="subjRowRecur" style="display:none">
-      <div class="form-row">
+      <!-- 授業・科目（通常タスク） -->
+      <div id="subjNormalRow" class="form-row">
+        <label>授業・科目</label>
+        <div class="name-suggest-wrap">
+          <input type="text" id="t_subj" placeholder="授業名・科目名" autocomplete="off"
+            oninput="showSubjSuggest('normal')" onfocus="showSubjSuggest('normal')" onblur="hideSubjSuggestDelayed('normal')">
+          <input type="hidden" id="t_classId">
+          <div class="name-suggest-list" id="subjSuggestList"></div>
+        </div>
+      </div>
+      <!-- 授業・科目（繰り返しタスク） -->
+      <div id="subjRowRecur" class="form-row" style="display:none">
         <label>授業・科目</label>
         <div class="name-suggest-wrap">
           <input type="text" id="t_subj2" placeholder="授業名・科目名" autocomplete="off"
@@ -1135,15 +1149,16 @@
           <div class="name-suggest-list" id="subjSuggestList2"></div>
         </div>
       </div>
+      <div class="form-row">
+        <label>メモ</label>
+        <textarea id="t_note" rows="2" placeholder="補足メモ..."></textarea>
+      </div>
+      <div class="form-row">
+        <label>通知</label>
+        <button type="button" id="t_notif" class="notif-toggle notif-on" onclick="toggleNotifBtn('t_notif')">🔔 通知オン</button>
+      </div>
     </div>
-    <div class="form-row">
-      <label>メモ</label>
-      <textarea id="t_note" rows="2" placeholder="補足メモ..."></textarea>
-    </div>
-    <div class="form-row">
-      <label>通知</label>
-      <button type="button" id="t_notif" class="notif-toggle notif-on" onclick="toggleNotifBtn('t_notif')">🔔 通知オン</button>
-    </div>
+
     <div class="btn-row">
       <button class="btn-cancel" onclick="closeTaskModal()">キャンセル</button>
       <button class="btn-submit" onclick="saveTask()">保存</button>
@@ -1205,8 +1220,10 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <h2 id="classModalTitle">授業追加</h2>
+
+    <!-- ── 主要項目 ── -->
     <div class="form-row">
-      <label>授業名 *</label>
+      <label>授業名 <span class="req-badge">必須</span></label>
       <input type="text" id="c_name" placeholder="例: 線形代数">
     </div>
     <div class="form-cols">
@@ -1223,42 +1240,50 @@
         <select id="c_period"></select>
       </div>
     </div>
-    <div class="form-cols">
-      <div class="form-row">
-        <label>教室</label>
-        <input type="text" id="c_room" placeholder="例: 8号館301">
-      </div>
-      <div class="form-row">
-        <label>教員</label>
-        <input type="text" id="c_teacher" placeholder="例: 山田教授">
-      </div>
-    </div>
-    <div class="form-cols">
-      <div class="form-row">
-        <label>全授業回数（予定）</label>
-        <input type="number" id="c_sessions" placeholder="例: 15" min="1" max="99" value="15">
-      </div>
-      <div class="form-row">
-        <label>欠席上限（回）</label>
-        <input type="number" id="c_abs_limit" placeholder="共通設定を使用" min="1" max="99">
-      </div>
-    </div>
-    <div class="form-row">
-      <label>ZoomリンクURL</label>
-      <input type="url" id="c_url" placeholder="https://zoom.us/j/...">
-    </div>
-    <div class="form-row">
-      <label>メモ（シラバスURLなど）</label>
-      <textarea id="c_note" rows="2" placeholder="参考URL・授業メモなど..."></textarea>
-    </div>
     <div class="form-row">
       <label>色</label>
       <div class="color-swatch" id="colorSwatches"></div>
     </div>
-    <div class="form-row">
-      <label>通知</label>
-      <button type="button" id="c_notif" class="notif-toggle notif-on" onclick="toggleNotifBtn('c_notif')">🔔 通知オン</button>
+
+    <!-- ── 詳細設定 ── -->
+    <div class="form-detail-hdr" onclick="toggleFormDetail('classDetail')">
+      <span>⚙️ 詳細設定</span><span class="fda">▶</span>
     </div>
+    <div class="form-detail-body" id="classDetail">
+      <div class="form-cols">
+        <div class="form-row">
+          <label>教室</label>
+          <input type="text" id="c_room" placeholder="例: 8号館301">
+        </div>
+        <div class="form-row">
+          <label>教員</label>
+          <input type="text" id="c_teacher" placeholder="例: 山田教授">
+        </div>
+      </div>
+      <div class="form-cols">
+        <div class="form-row">
+          <label>全授業回数（予定）</label>
+          <input type="number" id="c_sessions" placeholder="例: 15" min="1" max="99" value="15">
+        </div>
+        <div class="form-row">
+          <label>欠席上限（回）</label>
+          <input type="number" id="c_abs_limit" placeholder="共通設定を使用" min="1" max="99">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>ZoomリンクURL</label>
+        <input type="url" id="c_url" placeholder="https://zoom.us/j/...">
+      </div>
+      <div class="form-row">
+        <label>メモ（シラバスURLなど）</label>
+        <textarea id="c_note" rows="2" placeholder="参考URL・授業メモなど..."></textarea>
+      </div>
+      <div class="form-row">
+        <label>通知</label>
+        <button type="button" id="c_notif" class="notif-toggle notif-on" onclick="toggleNotifBtn('c_notif')">🔔 通知オン</button>
+      </div>
+    </div>
+
     <div class="btn-row">
       <button class="btn-cancel" onclick="closeClassModal()">キャンセル</button>
       <button class="btn-submit" onclick="saveClass()">保存</button>
@@ -2870,6 +2895,7 @@ function openEditTask(id) {
   const sr2 = document.getElementById('t_subj2_row'); if(sr2) sr2.style.display='none';
   const inp2 = document.getElementById('t_subj2'); if(inp2) inp2.value='';
   setNotifBtn('t_notif', t.notif !== false);
+  openFormDetail('taskDetail');
   onRecurChange();
   document.getElementById('taskModal').classList.add('show');
 }
@@ -2908,6 +2934,7 @@ function openEditRecurring(id) {
     document.getElementById('t_yearDay').value = rt.yearDay || '';
   }
   setNotifBtn('t_notif', rt.notif !== false);
+  openFormDetail('taskDetail');
   document.getElementById('taskModal').classList.add('show');
 }
 
@@ -3495,11 +3522,30 @@ function setupClassLinkForEdit(classId, subj, which) {
 function onRecurChange() {
   const v = document.getElementById('t_recur').value;
   const isNone = v === 'none';
-  document.getElementById('dueRow').style.display        = isNone ? '' : 'none';
+  document.getElementById('dueOnlyRow').style.display    = isNone ? '' : 'none';
+  document.getElementById('subjNormalRow').style.display = isNone ? '' : 'none';
   document.getElementById('subjRowRecur').style.display  = isNone ? 'none' : '';
   document.getElementById('weekDayRow').style.display    = v === 'weekly'  ? '' : 'none';
   document.getElementById('monthDayRow').style.display   = v === 'monthly' ? '' : 'none';
   document.getElementById('yearDateRow').style.display   = v === 'yearly'  ? '' : 'none';
+}
+function toggleFormDetail(id) {
+  const body = document.getElementById(id);
+  const hdr  = body.previousElementSibling;
+  const open = body.classList.toggle('open');
+  hdr.classList.toggle('open', open);
+}
+function openFormDetail(id) {
+  const body = document.getElementById(id);
+  const hdr  = body.previousElementSibling;
+  body.classList.add('open');
+  hdr.classList.add('open');
+}
+function closeFormDetail(id) {
+  const body = document.getElementById(id);
+  const hdr  = body.previousElementSibling;
+  body.classList.remove('open');
+  hdr.classList.remove('open');
 }
 function toggleWD(btn) {
   btn.classList.toggle('selected');
@@ -3562,6 +3608,7 @@ function openAddTask() {
   document.getElementById('t_yearMonth').value='4';
   document.getElementById('t_yearDay').value='';
   setNotifBtn('t_notif', true);
+  closeFormDetail('taskDetail');
   onRecurChange();
   document.getElementById('taskModal').classList.add('show');
 }
@@ -3573,6 +3620,7 @@ function openAddTaskForClass(classId) {
   if (!cls) return;
   ['t_subj','t_subj2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=cls.name;});
   ['t_classId','t_classId2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=classId;});
+  openFormDetail('taskDetail'); // 科目が自動入力されるので詳細を展開
 }
 // ── 科目サジェスト ──────────────────────────────────
 const _subjBlurTimer = {normal: null, recur: null};
@@ -3831,6 +3879,7 @@ function openEditClass(id) {
   selectedColor = cls.color || CLASS_COLORS[0];
   renderSwatches();
   setNotifBtn('c_notif', cls.notif !== false);
+  openFormDetail('classDetail');
   document.getElementById('classModal').classList.add('show');
 }
 function openAddClass() {
@@ -3842,6 +3891,7 @@ function openAddClass() {
   renderPeriodSelect('0');
   selectedColor=CLASS_COLORS[0]; renderSwatches();
   setNotifBtn('c_notif', true);
+  closeFormDetail('classDetail');
   document.getElementById('classModal').classList.add('show');
 }
 function openAddClassAt(day,period) {

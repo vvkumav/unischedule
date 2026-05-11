@@ -488,6 +488,26 @@
   .hm2-today{box-shadow:0 0 0 2px var(--accent)!important}
   .hm2-date{font-size:8px;color:rgba(255,255,255,0.35);line-height:1;user-select:none;pointer-events:none}
   .hm2-date.act{color:rgba(255,255,255,0.75)}
+  /* ── TUTORIAL ── */
+  #tutOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #tutCard{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:32px 24px 22px;max-width:340px;width:100%;text-align:center;box-shadow:0 16px 56px rgba(0,0,0,.55);position:relative;animation:tutIn .28s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes tutIn{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:none}}
+  .tut-icon{font-size:58px;line-height:1;margin-bottom:14px;display:block;animation:tutIconPop .35s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes tutIconPop{from{transform:scale(0.6)}to{transform:scale(1)}}
+  .tut-title{font-size:18px;font-weight:700;margin-bottom:10px;color:var(--text)}
+  .tut-desc{font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-line;margin-bottom:22px;min-height:68px}
+  .tut-dots{display:flex;gap:5px;justify-content:center;margin-bottom:20px}
+  .tut-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all .25s}
+  .tut-dot.act{background:var(--accent);width:20px;border-radius:4px}
+  .tut-btns{display:flex;gap:8px;align-items:center}
+  .tut-back{background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:10px 13px;font-size:13px;cursor:pointer;flex-shrink:0;transition:all .15s}
+  .tut-back:hover{color:var(--text);border-color:var(--accent)}
+  .tut-next{flex:1;padding:11px 0;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s}
+  .tut-next:hover{opacity:.88}
+  .tut-skip{background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;padding:8px 4px;flex-shrink:0;transition:color .15s}
+  .tut-skip:hover{color:var(--text)}
+  .tut-hl{animation:tutHL 1.6s ease-in-out 3}
+  @keyframes tutHL{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.6)}50%{box-shadow:0 0 0 8px rgba(99,102,241,0)}}
   .task-stat-card{background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
   .tsc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
   .tsc-name{font-size:14px;font-weight:600}
@@ -1455,6 +1475,13 @@
 
     <div class="settings-section">
       <div class="settings-section-title">リセット</div>
+      <button class="settings-btn" onclick="closeSettings();tutReset()">
+        <span class="sb-icon">🎓</span>
+        <div class="sb-text">
+          <div>チュートリアルを再表示</div>
+          <div class="sb-sub">アプリの使い方ガイドをもう一度見る</div>
+        </div>
+      </button>
       <button class="settings-btn" onclick="resetAllData()" style="color:var(--red)">
         <span class="sb-icon">🧹</span>
         <div class="sb-text">
@@ -1466,6 +1493,21 @@
 
     <div class="btn-row">
       <button class="btn-cancel" onclick="closeSettings()">閉じる</button>
+    </div>
+  </div><!-- /settingsModal -->
+</div>
+
+<!-- ── Tutorial Overlay ── -->
+<div id="tutOverlay" style="display:none" onclick="event.target===this&&tutClose()">
+  <div id="tutCard">
+    <span id="tutIcon" class="tut-icon">🎓</span>
+    <div id="tutTitle" class="tut-title"></div>
+    <div id="tutDesc"  class="tut-desc"></div>
+    <div id="tutDots"  class="tut-dots"></div>
+    <div class="tut-btns">
+      <button id="tutBack" class="tut-back" onclick="tutNav(-1)" style="display:none">← 戻る</button>
+      <button id="tutNext" class="tut-next" onclick="tutNav(1)">次へ →</button>
+      <button class="tut-skip" onclick="tutClose()">スキップ</button>
     </div>
   </div>
 </div>
@@ -4521,10 +4563,76 @@ renderSwatches();
 renderBuiltInCatNav();
 renderSidebarCustomCats();
 renderAllCatSelects();
+// ── TUTORIAL ──
+const TUT_STEPS = [
+  { icon:'🎓', title:'UniScheduleへようこそ！',
+    desc:'大学生活をスマートに管理する\nオールインワンアプリです。\n主な機能を簡単にご紹介します。', page:null },
+  { icon:'🏡', title:'ホーム',
+    desc:'今日の授業・タスク・習慣を\n一目で確認できます。\n期限超過や出席警告もここに表示。', page:'dashboard' },
+  { icon:'🏫', title:'時間割',
+    desc:'曜日・時限ごとに授業を登録します。\n出欠記録をつけると欠席上限に\n近づいたとき自動で警告します。', page:'timetable' },
+  { icon:'📋', title:'タスク・課題',
+    desc:'レポート・課題の締め切りを管理します。\n毎日/毎週の繰り返し設定で\n習慣タスクも記録できます。', page:'tasks' },
+  { icon:'📈', title:'習慣・統計',
+    desc:'習慣タスクの実績をカレンダー式\nヒートマップで可視化します。\nストリーク（連続記録）も追跡。', page:'stats' },
+  { icon:'📆', title:'カレンダー',
+    desc:'月間ビューで授業・タスク・\nイベントをまとめて確認できます。\n日付タップで予定を追加。', page:'calendar' },
+  { icon:'🔔', title:'通知リマインダー',
+    desc:'締め切り3日前から通知が届きます。\nブラウザの「通知を許可」で\nリマインダーを有効化しましょう。', page:null },
+  { icon:'✅', title:'準備完了！',
+    desc:'まずは「時間割」から授業を\n登録してみましょう。\nデータはブラウザに自動保存されます。', page:'timetable' }
+];
+
+let _tutStep = 0;
+
+function tutInit() {
+  if (!sto.get('tutDone', false)) {
+    setTimeout(() => { _tutStep=0; document.getElementById('tutOverlay').style.display='flex'; tutRender(); }, 700);
+  }
+}
+
+function tutRender() {
+  const s=TUT_STEPS[_tutStep], total=TUT_STEPS.length;
+  document.getElementById('tutIcon').textContent  = s.icon;
+  document.getElementById('tutTitle').textContent = s.title;
+  document.getElementById('tutDesc').textContent  = s.desc;
+  document.getElementById('tutDots').innerHTML =
+    TUT_STEPS.map((_,i)=>`<div class="tut-dot${i===_tutStep?' act':''}"></div>`).join('');
+  const back=document.getElementById('tutBack'), next=document.getElementById('tutNext');
+  back.style.display = _tutStep>0 ? '' : 'none';
+  next.textContent = _tutStep===total-1 ? '始める ✓' : '次へ →';
+  document.querySelectorAll('.tut-hl').forEach(el=>el.classList.remove('tut-hl'));
+  if (s.page) document.querySelectorAll(`[data-page="${s.page}"]`).forEach(el=>el.classList.add('tut-hl'));
+}
+
+function tutNav(dir) {
+  const next=_tutStep+dir;
+  if (next>=TUT_STEPS.length) { tutClose(); return; }
+  if (next<0) return;
+  _tutStep=next;
+  const card=document.getElementById('tutCard');
+  card.style.animation='none'; card.offsetHeight; card.style.animation='';
+  tutRender();
+}
+
+function tutClose() {
+  document.getElementById('tutOverlay').style.display='none';
+  document.querySelectorAll('.tut-hl').forEach(el=>el.classList.remove('tut-hl'));
+  sto.set('tutDone', true);
+}
+
+function tutReset() {
+  _tutStep=0;
+  sto.set('tutDone', false);
+  document.getElementById('tutOverlay').style.display='flex';
+  tutRender();
+}
+
 renderDashboard();
 registerSW().then(() => autoCheckDeadlines());
 loadEmbeddedData();
 applySeason();
+tutInit();
 </script>
 </body>
 </html>

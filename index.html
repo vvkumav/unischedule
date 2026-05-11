@@ -472,10 +472,22 @@
   .period-time-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:8px}
   .period-time-label{font-size:12px;font-weight:600;color:var(--text2);min-width:28px}
   .period-time-input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;min-width:0}
-  .heatmap-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;overflow-x:auto}
-  .heatmap-grid{display:grid;grid-template-columns:repeat(28,1fr);gap:3px;min-width:260px}
-  .hm-cell{aspect-ratio:1;border-radius:3px;min-width:8px}
+  .heatmap-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px}
   .hm-legend{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:10px;color:var(--text2)}
+  /* ── improved heatmap (hm2) ── */
+  .hm2-wrap{display:flex;gap:6px;align-items:flex-start}
+  .hm2-dow-col{display:flex;flex-direction:column;gap:3px;padding-top:22px;flex-shrink:0}
+  .hm2-dow-lbl{height:28px;display:flex;align-items:center;font-size:10px;color:var(--text2)}
+  .hm2-right{flex:1;min-width:0;overflow-x:auto}
+  .hm2-col-hdrs{display:flex;gap:3px;margin-bottom:3px}
+  .hm2-col-hdr{flex:1;text-align:center;font-size:9px;color:var(--text2);min-width:30px}
+  .hm2-matrix{display:flex;flex-direction:column;gap:3px}
+  .hm2-row{display:flex;gap:3px}
+  .hm2-cell{flex:1;height:28px;min-width:30px;border-radius:4px;display:flex;align-items:flex-end;justify-content:flex-end;padding:1px 3px;cursor:default;transition:filter .1s}
+  .hm2-cell:hover{filter:brightness(1.3)}
+  .hm2-today{box-shadow:0 0 0 2px var(--accent)!important}
+  .hm2-date{font-size:8px;color:rgba(255,255,255,0.35);line-height:1;user-select:none;pointer-events:none}
+  .hm2-date.act{color:rgba(255,255,255,0.75)}
   .task-stat-card{background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
   .tsc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
   .tsc-name{font-size:14px;font-weight:600}
@@ -2575,12 +2587,7 @@ function openEditRecurring(id) {
 // ── STATS ──
 function renderStats() {
   const el = document.getElementById('statsContent');
-  if (!recurringTasks.length) {
-    el.innerHTML = '<div class="empty-state"><div class="es-icon">📈</div><div>繰り返しタスクがまだありません</div><div style="margin-top:8px;font-size:12px">タスク追加で「繰り返し：毎日/毎週/毎月/毎年」を選択してください</div></div>';
-    return;
-  }
 
-  const now = new Date();
   const dayMap={}, weekMap={};
   let weekMin=0, weekCount=0, totalMin=0, maxStreak=0;
   recurringTasks.forEach(rt=>{
@@ -2595,6 +2602,7 @@ function renderStats() {
     maxStreak=Math.max(maxStreak,calcStreak(rt));
   });
 
+  // Bar chart (last 7 days)
   const barDays=[];
   for(let i=6;i>=0;i--){
     const d=new Date(TODAY_DATE); d.setDate(d.getDate()-i);
@@ -2603,72 +2611,121 @@ function renderStats() {
   }
   const maxBar=Math.max(...barDays.map(d=>d.m),1);
 
-  const heatDays=[];
-  for(let i=27;i>=0;i--){
-    const d=new Date(TODAY_DATE); d.setDate(d.getDate()-i);
-    const ds=d.toISOString().split('T')[0];
-    heatDays.push({ds,m:dayMap[ds]||0,isToday:ds===TODAY});
-  }
-
   const heatColor = m => {
-    if(m===0)return'#1e2130';
-    if(m<20)return'#14532d';
-    if(m<45)return'#15803d';
-    if(m<90)return'#16a34a';
-    return'#22c55e';
+    if(m===0) return 'var(--surface2)';
+    if(m<20)  return '#14532d';
+    if(m<45)  return '#15803d';
+    if(m<90)  return '#16a34a';
+    return '#22c55e';
   };
 
-  const taskCards = recurringTasks.map(rt=>{
-    const streak=calcStreak(rt);
-    const comps=rt.completions||[];
-    const total=comps.reduce((s,c)=>s+c.minutes,0);
-    const cnt=comps.length;
-    const avg=cnt?Math.round(total/cnt):0;
-    const compMap={};
-    comps.forEach(c=>{ compMap[c.date]=(compMap[c.date]||0)+c.minutes; });
-    const miniCells=[];
-    for(let i=13;i>=0;i--){
-      const d=new Date(TODAY_DATE); d.setDate(d.getDate()-i);
+  // ── Calendar-week heatmap (5 cols = 5 weeks, 7 rows = Mon〜Sun) ──
+  const todayDow   = TODAY_DATE.getDay(); // 0=Sun
+  const daysToMon  = todayDow===0 ? 6 : todayDow-1; // days since last Monday
+  const thisWeekMon = new Date(TODAY_DATE);
+  thisWeekMon.setDate(thisWeekMon.getDate()-daysToMon);
+  const gridStart = new Date(thisWeekMon);
+  gridStart.setDate(gridStart.getDate()-28); // 4 weeks before this Monday
+
+  const calGrid = Array(7).fill(null).map(()=>Array(5).fill(null));
+  for(let col=0;col<5;col++){
+    for(let row=0;row<7;row++){
+      const d=new Date(gridStart);
+      d.setDate(d.getDate()+col*7+row);
       const ds=d.toISOString().split('T')[0];
-      miniCells.push({ds,m:compMap[ds]||0,isToday:ds===TODAY});
+      const daysAgo=Math.round((TODAY_DATE-d)/86400000);
+      calGrid[row][col]={ds, m:dayMap[ds]||0, isToday:ds===TODAY, isFuture:daysAgo<0};
     }
-    const compWeekMap={};
-    comps.forEach(c=>{ const wk=getWeekKey(c.date); compWeekMap[wk]=(compWeekMap[wk]||0)+c.minutes; });
-    const weekBars=[];
-    for(let w=3;w>=0;w--){
-      const wd=new Date(TODAY_DATE); wd.setDate(wd.getDate()-w*7);
-      const wk=getWeekKey(wd);
-      weekBars.push({label:w===0?'今週':w===1?'先週':`${w+1}週前`,min:compWeekMap[wk]||0});
-    }
-    const maxW=Math.max(...weekBars.map(b=>b.min),1);
-    return `<div class="task-stat-card">
-      <div class="tsc-header">
-        <div><div class="tsc-name">${rt.name}</div>
-          <div class="tsc-badges">
-            <span class="recur-badge">${rt.recurrence==='daily'?'毎日':'毎週'}</span>
-            ${catBadgeHTML(rt.cat)}
-            ${rt.subj?`<span style="font-size:11px;color:var(--text2)">${rt.subj}</span>`:''}
-          </div>
+  }
+  const colHeaders=Array(5).fill(0).map((_,col)=>{
+    const d=new Date(gridStart); d.setDate(d.getDate()+col*7);
+    const e=new Date(d); e.setDate(e.getDate()+6);
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  });
+  const DOW_LBL=['月','火','水','木','金','土','日'];
+
+  const heatmapHTML=`
+    <div class="hm2-wrap">
+      <div class="hm2-dow-col">
+        ${DOW_LBL.map(l=>`<div class="hm2-dow-lbl">${l}</div>`).join('')}
+      </div>
+      <div class="hm2-right">
+        <div class="hm2-col-hdrs">
+          ${colHeaders.map(h=>`<div class="hm2-col-hdr">${h}〜</div>`).join('')}
         </div>
-        ${streak>0?`<span class="streak-badge" style="font-size:14px">🔥 ${streak}${rt.recurrence==='daily'?'日':'週'}</span>`:'<span style="font-size:12px;color:var(--text2)">ストリークなし</span>'}
-      </div>
-      <div class="tsc-nums">
-        <div class="tsc-num"><div class="tsc-num-val" style="color:var(--accent2)">${cnt}</div><div class="tsc-num-lbl">完了回数</div></div>
-        <div class="tsc-num"><div class="tsc-num-val" style="color:var(--green)">${avg?fmtMin(avg):'—'}</div><div class="tsc-num-lbl">平均時間</div></div>
-        <div class="tsc-num"><div class="tsc-num-val" style="color:var(--blue)">${total?fmtMin(total):'—'}</div><div class="tsc-num-lbl">合計時間</div></div>
-      </div>
-      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">直近14日</div>
-      <div class="mini-heatmap">${miniCells.map(c=>`<div class="mh-cell" title="${c.ds} ${c.m}分" style="background:${heatColor(c.m)};${c.isToday?'box-shadow:0 0 0 1px var(--accent)':''}"></div>`).join('')}</div>
-      <div class="time-bar-wrap" style="margin-top:12px">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">週別実績</div>
-        ${weekBars.map(b=>`<div class="time-bar-row">
-          <span style="min-width:40px;color:var(--text2)">${b.label}</span>
-          <div class="time-bar-bg"><div class="time-bar-fill" style="width:${(b.min/maxW*100).toFixed(0)}%;background:var(--accent)"></div></div>
-          <span style="min-width:48px;text-align:right">${b.min?fmtMin(b.min):'—'}</span>
-        </div>`).join('')}
+        <div class="hm2-matrix">
+          ${DOW_LBL.map((_,row)=>`<div class="hm2-row">
+            ${Array(5).fill(0).map((_,col)=>{
+              const cell=calGrid[row][col];
+              if(cell.isFuture) return `<div class="hm2-cell" style="background:rgba(255,255,255,0.03)"></div>`;
+              const d=new Date(cell.ds+'T00:00:00');
+              const label=`${d.getMonth()+1}/${d.getDate()}(${DOW_LBL[row]}) ${cell.m?cell.m+'分':'活動なし'}`;
+              return `<div class="hm2-cell${cell.isToday?' hm2-today':''}" style="background:${heatColor(cell.m)}" title="${label}"><span class="hm2-date${cell.m?' act':''}">${d.getDate()}</span></div>`;
+            }).join('')}
+          </div>`).join('')}
+        </div>
+        <div class="hm-legend" style="margin-top:8px">
+          <span>少ない</span>
+          ${['var(--surface2)','#14532d','#15803d','#16a34a','#22c55e'].map(c=>`<div style="width:12px;height:12px;border-radius:2px;background:${c}"></div>`).join('')}
+          <span>多い</span>
+        </div>
       </div>
     </div>`;
-  }).join('');
+
+  // Task cards
+  const taskCards = !recurringTasks.length
+    ? `<div class="empty-state"><div class="es-icon">📋</div><div>習慣タスクがまだありません</div><div style="margin-top:8px;font-size:12px;color:var(--text2)">タスクを追加して「繰り返し：毎日/毎週」を選択してください</div></div>`
+    : recurringTasks.map(rt=>{
+        const streak=calcStreak(rt);
+        const comps=rt.completions||[];
+        const total=comps.reduce((s,c)=>s+c.minutes,0);
+        const cnt=comps.length;
+        const avg=cnt?Math.round(total/cnt):0;
+        const compMap={};
+        comps.forEach(c=>{compMap[c.date]=(compMap[c.date]||0)+c.minutes;});
+        const miniCells=[];
+        for(let i=13;i>=0;i--){
+          const d=new Date(TODAY_DATE); d.setDate(d.getDate()-i);
+          const ds=d.toISOString().split('T')[0];
+          miniCells.push({ds,m:compMap[ds]||0,isToday:ds===TODAY});
+        }
+        const compWeekMap={};
+        comps.forEach(c=>{const wk=getWeekKey(c.date);compWeekMap[wk]=(compWeekMap[wk]||0)+c.minutes;});
+        const weekBars=[];
+        for(let w=3;w>=0;w--){
+          const wd=new Date(TODAY_DATE); wd.setDate(wd.getDate()-w*7);
+          const wk=getWeekKey(wd);
+          weekBars.push({label:w===0?'今週':w===1?'先週':`${w+1}週前`,min:compWeekMap[wk]||0});
+        }
+        const maxW=Math.max(...weekBars.map(b=>b.min),1);
+        return `<div class="task-stat-card">
+          <div class="tsc-header">
+            <div><div class="tsc-name">${rt.name}</div>
+              <div class="tsc-badges">
+                <span class="recur-badge">${rt.recurrence==='daily'?'毎日':'毎週'}</span>
+                ${catBadgeHTML(rt.cat)}
+                ${rt.subj?`<span style="font-size:11px;color:var(--text2)">${rt.subj}</span>`:''}
+              </div>
+            </div>
+            ${streak>0?`<span class="streak-badge" style="font-size:14px">🔥 ${streak}${rt.recurrence==='daily'?'日':'週'}</span>`:'<span style="font-size:12px;color:var(--text2)">ストリークなし</span>'}
+          </div>
+          <div class="tsc-nums">
+            <div class="tsc-num"><div class="tsc-num-val" style="color:var(--accent2)">${cnt}</div><div class="tsc-num-lbl">完了回数</div></div>
+            <div class="tsc-num"><div class="tsc-num-val" style="color:var(--green)">${avg?fmtMin(avg):'—'}</div><div class="tsc-num-lbl">平均時間</div></div>
+            <div class="tsc-num"><div class="tsc-num-val" style="color:var(--blue)">${total?fmtMin(total):'—'}</div><div class="tsc-num-lbl">合計時間</div></div>
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px">直近14日</div>
+          <div class="mini-heatmap">${miniCells.map(c=>`<div class="mh-cell" title="${c.ds} ${c.m}分" style="background:${heatColor(c.m)};${c.isToday?'box-shadow:0 0 0 1px var(--accent)':''}"></div>`).join('')}</div>
+          <div class="time-bar-wrap" style="margin-top:12px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:6px">週別実績</div>
+            ${weekBars.map(b=>`<div class="time-bar-row">
+              <span style="min-width:40px;color:var(--text2)">${b.label}</span>
+              <div class="time-bar-bg"><div class="time-bar-fill" style="width:${(b.min/maxW*100).toFixed(0)}%;background:var(--accent)"></div></div>
+              <span style="min-width:48px;text-align:right">${b.min?fmtMin(b.min):'—'}</span>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }).join('');
 
   el.innerHTML = `
     <div class="stats-summary">
@@ -2691,15 +2748,13 @@ function renderStats() {
       </div>
     </div>
     <div class="heatmap-wrap">
-      <div style="font-size:13px;font-weight:600;margin-bottom:12px">28日間の活動ヒートマップ</div>
-      <div class="heatmap-grid">${heatDays.map(d=>`<div class="hm-cell" title="${d.ds}&#10;${d.m}分" style="background:${heatColor(d.m)};${d.isToday?'box-shadow:0 0 0 1.5px var(--accent)':''}"></div>`).join('')}</div>
-      <div class="hm-legend">
-        <span>少ない</span>
-        ${['#1e2130','#14532d','#15803d','#16a34a','#22c55e'].map(c=>`<div style="width:12px;height:12px;border-radius:2px;background:${c}"></div>`).join('')}
-        <span>多い</span>
-      </div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">📅 直近5週間の活動カレンダー</div>
+      ${heatmapHTML}
     </div>
-    <div><div style="font-size:14px;font-weight:600;margin-bottom:12px">タスク別詳細</div>${taskCards}</div>`;
+    <div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">タスク別詳細</div>
+      ${taskCards}
+    </div>`;
 }
 
 function getWeekStart() {

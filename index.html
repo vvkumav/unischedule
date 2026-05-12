@@ -179,7 +179,10 @@
   .tl-sub{font-size:11px;color:var(--text2);margin-top:2px}
 
   /* ── TIMETABLE ── */
-  .timetable-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px}
+  .timetable-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px}
+  .tt-hint{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:11px;color:var(--text2);padding:8px 4px 14px;line-height:1.5}
+  .tt-hint-icon{font-size:13px}
+  .tt-hint-sep{opacity:.4;margin:0 2px}
   .timetable{display:grid;grid-template-columns:52px repeat(7,minmax(62px,1fr));min-width:540px}
   .tt-head-sat{color:#3b82f6!important}
   .tt-head-sun{color:#ef4444!important}
@@ -874,6 +877,12 @@
         <button class="add-btn" onclick="openAddClass()">＋ 授業追加</button>
       </div>
       <div class="timetable-outer"><div class="timetable" id="timetable"></div></div>
+      <div class="tt-hint">
+        <span class="tt-hint-icon">👆</span>
+        <span>空きコマをタップして授業を追加できます</span>
+        <span class="tt-hint-sep">·</span>
+        <span>授業名をタップで詳細・出席管理</span>
+      </div>
     </div>
 
     <!-- 出席管理タブ -->

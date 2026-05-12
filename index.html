@@ -107,9 +107,10 @@
   .icon-btn:hover{color:var(--text)}
 
   /* ── BOTTOM NAV ── */
-  .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;height:calc(var(--bnav-h) + var(--safe-b));background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -2px 8px var(--accent-muted);display:flex;align-items:flex-start;padding-top:6px;padding-bottom:var(--safe-b)}
-  .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px 0;font-size:9px;font-weight:500;transition:color .15s;-webkit-tap-highlight-color:transparent}
-  .bn-item .bn-icon{font-size:18px;line-height:1}
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;height:calc(var(--bnav-h) + var(--safe-b));background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -2px 8px var(--accent-muted);display:flex;align-items:flex-start;padding-top:6px;padding-bottom:var(--safe-b);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .bottom-nav::-webkit-scrollbar{display:none}
+  .bn-item{flex:1;flex-shrink:0;min-width:54px;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;color:var(--text2);padding:4px 2px;font-size:9px;font-weight:500;transition:color .15s;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+  .bn-item .bn-icon{font-size:20px;line-height:1}
   .bn-item.active{color:var(--accent2)}
 
   /* ── SIDEBAR (desktop) ── */
@@ -126,8 +127,9 @@
   .page-title .icon{font-size:22px}
 
   /* ── TABS ── */
-  .tab-bar{display:flex;gap:4px;margin-bottom:16px;background:var(--surface2);border-radius:10px;padding:4px}
-  .tab-btn{flex:1;background:none;border:none;color:var(--text2);padding:8px 6px;font-size:12px;font-weight:600;border-radius:7px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+  .tab-bar{display:flex;gap:4px;margin-bottom:16px;background:var(--surface2);border-radius:10px;padding:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab-btn{flex:1;flex-shrink:0;background:none;border:none;color:var(--text2);padding:8px 10px;font-size:12px;font-weight:600;border-radius:7px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;white-space:nowrap}
   .tab-btn.active{background:var(--surface);color:var(--accent2);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 
   /* ── TODAY STRIP ── */
@@ -201,7 +203,7 @@
   @media(hover:none){.cb-del{display:flex!important}.task-del{opacity:1!important}.task-edit{opacity:1!important}.rt-del{opacity:1!important}.grade-del{opacity:1!important}}
 
   /* ── ATTENDANCE TABS ── */
-  .att-class-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .att-class-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x}
   .att-class-tabs::-webkit-scrollbar{display:none}
   .att-class-tab{display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;white-space:nowrap;min-width:70px;transition:all .15s;-webkit-tap-highlight-color:transparent;flex-shrink:0;border-bottom:3px solid transparent}
   .att-class-tab:hover{border-color:var(--border);background:var(--surface)}
@@ -509,7 +511,7 @@
   .tut-hl{animation:tutHL 1.6s ease-in-out 3}
   @keyframes tutHL{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.6)}50%{box-shadow:0 0 0 8px rgba(99,102,241,0)}}
   /* ── HELP MODAL ── */
-  .help-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px;position:sticky;top:-20px;background:var(--surface);z-index:2;padding-top:4px}
+  .help-tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px;position:sticky;top:0;background:var(--surface);z-index:2;padding-top:2px;touch-action:pan-x}
   .help-tabs::-webkit-scrollbar{display:none}
   .help-tab{flex-shrink:0;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap}
   .help-tab.act{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -565,7 +567,7 @@
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:200;overscroll-behavior:none}
   .modal-overlay.show{display:flex}
   body:has(.modal-overlay.show){overflow:hidden;touch-action:none}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + var(--safe-b));width:100%;max-width:100%;max-height:92vh;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:slideUp .22s ease}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px 20px calc(28px + var(--safe-b));width:100%;max-width:100%;max-height:94vh;max-height:94dvh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y;animation:slideUp .22s ease}
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
   .modal h2{font-size:16px;font-weight:700;margin-bottom:16px;font-family:'Outfit','Noto Sans JP',sans-serif;letter-spacing:0.03em}
@@ -607,6 +609,12 @@
   .time-preset:active,.time-preset.sel{background:var(--accent-muted);border-color:var(--accent);color:var(--accent2)}
 
   /* ── SETTINGS MODAL ── */
+  .settings-tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:16px;position:sticky;top:0;background:var(--surface);z-index:2;padding-top:2px;touch-action:pan-x}
+  .settings-tabs::-webkit-scrollbar{display:none}
+  .settings-tab{flex-shrink:0;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+  .settings-tab.act{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .settings-pane{display:none}
+  .settings-pane.act{display:block}
   .settings-section{margin-bottom:20px}
   .settings-accordion-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:0;transition:border-color .15s}
   .settings-accordion-hdr:hover{border-color:var(--accent)}
@@ -738,6 +746,16 @@
   @media(max-width:560px){
     .add-btn-label{display:none}
   }
+  /* ── VERY NARROW (≤380px, e.g. iPhone SE) ── */
+  @media(max-width:380px){
+    .form-cols{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr}
+    .stats-summary{grid-template-columns:1fr}
+    .bn-item{min-width:50px;font-size:8.5px}
+    .bn-item .bn-icon{font-size:19px}
+    .header h1{font-size:14px}
+    .tsc-nums{grid-template-columns:repeat(3,1fr)}
+  }
 </style>
 </head>
 <body>
@@ -803,6 +821,10 @@
         <div class="section-header"><h2>今日の授業</h2></div>
         <div id="todayClasses"></div>
       </div>
+    </div>
+    <div id="todayEventsSection" style="display:none">
+      <div class="section-header" style="margin-top:16px"><h2>📆 今日の予定</h2></div>
+      <div id="todayEventsList"></div>
     </div>
     <div id="upcomingDashSection">
       <div class="section-header" style="margin-top:16px"><h2>⏰ 期限一覧</h2></div>
@@ -1407,145 +1429,153 @@
     <div class="modal-handle"></div>
     <h2>🛠️ 設定</h2>
 
-    <div class="settings-section">
-      <div class="settings-section-title">📲 スマートフォンでアクセス</div>
-      <div class="mobile-qr-section">
-        <div class="mobile-qr-box"><div id="qrCanvas"></div></div>
-        <div class="mobile-url-row">
-          <input id="mobileUrlInput" class="mobile-url-input" type="text" readonly>
-          <button class="add-btn" onclick="copyMobileUrl()" style="white-space:nowrap;padding:0 12px">コピー</button>
+    <!-- タブナビ -->
+    <div class="settings-tabs">
+      <button class="settings-tab act" onclick="settingsTab(0)">📲 一般</button>
+      <button class="settings-tab" onclick="settingsTab(1)">🏫 授業設定</button>
+      <button class="settings-tab" onclick="settingsTab(2)">🏷️ カテゴリ</button>
+      <button class="settings-tab" onclick="settingsTab(3)">🗂️ データ</button>
+    </div>
+
+    <!-- ペイン0: 一般（QR・通知） -->
+    <div class="settings-pane act" id="stpane-0">
+      <div class="settings-section">
+        <div class="settings-section-title">📲 スマートフォンでアクセス</div>
+        <div class="mobile-qr-section">
+          <div class="mobile-qr-box"><div id="qrCanvas"></div></div>
+          <div class="mobile-url-row">
+            <input id="mobileUrlInput" class="mobile-url-input" type="text" readonly>
+            <button class="add-btn" onclick="copyMobileUrl()" style="white-space:nowrap;padding:0 12px">コピー</button>
+          </div>
+          <div class="mobile-url-note">QRコードをスキャンしてスマートフォンからアクセス</div>
         </div>
-        <div class="mobile-url-note">QRコードをスキャンしてスマートフォンからアクセス</div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">通知</div>
+        <button class="settings-btn" onclick="toggleNotifications()">
+          <span class="sb-icon">🔔</span>
+          <div class="sb-text">
+            <div>締め切りリマインダー</div>
+            <div class="sb-sub">時間割・予定・タスク締め切りを毎日通知</div>
+          </div>
+          <span class="notif-status" id="notifStatus">確認中</span>
+        </button>
+        <button class="settings-btn" onclick="checkDeadlinesNow()">
+          <span class="sb-icon">📣</span>
+          <div class="sb-text">
+            <div>今すぐ期限チェック</div>
+            <div class="sb-sub">時間割・予定・締め切り・習慣タスクをまとめて通知</div>
+          </div>
+        </button>
+        <div id="iosNotifGuide" style="display:none;background:var(--green-bg,#f0faf3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--text2);line-height:1.8">
+          <div style="font-weight:700;color:var(--accent2);margin-bottom:6px">📱 iOSで通知を使う手順</div>
+          1. 画面下の <strong>共有ボタン（□↑）</strong> をタップ<br>
+          2. <strong>「ホーム画面に追加」</strong> を選択して追加<br>
+          3. ホーム画面のアイコンからアプリを開く<br>
+          4. 設定から通知を有効にする<br>
+          <span style="font-size:10px;opacity:.7">※ iOS 16.4 以降 / Safari のみ対応</span>
+        </div>
       </div>
     </div>
 
-    <div class="settings-section">
-      <div class="settings-section-title">通知</div>
-      <button class="settings-btn" onclick="toggleNotifications()">
-        <span class="sb-icon">🔔</span>
-        <div class="sb-text">
-          <div>締め切りリマインダー</div>
-          <div class="sb-sub">時間割・予定・タスク締め切りを毎日通知</div>
+    <!-- ペイン1: 授業設定 -->
+    <div class="settings-pane" id="stpane-1">
+      <div class="settings-section">
+        <div class="settings-section-title">授業時間設定（開始時刻）</div>
+        <div id="periodTimeInputs" class="period-time-grid"></div>
+        <button class="settings-btn" onclick="savePeriodSettings()" style="margin-top:6px">
+          <span class="sb-icon">✅</span>
+          <div class="sb-text">
+            <div>時限設定を保存</div>
+            <div class="sb-sub">変更を保存して時間割に反映</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">欠席上限設定</div>
+        <div class="period-time-row" style="align-items:center;gap:8px">
+          <div class="period-time-label">上限回数</div>
+          <input id="absLimitInput" type="number" min="1" max="99" class="period-time-input" style="width:72px;text-align:center">
+          <span style="font-size:13px;color:var(--text2)">回</span>
         </div>
-        <span class="notif-status" id="notifStatus">確認中</span>
-      </button>
-      <button class="settings-btn" onclick="checkDeadlinesNow()">
-        <span class="sb-icon">📣</span>
-        <div class="sb-text">
-          <div>今すぐ期限チェック</div>
-          <div class="sb-sub">時間割・予定・締め切り・習慣タスクをまとめて通知</div>
-        </div>
-      </button>
-      <div id="iosNotifGuide" style="display:none;background:var(--green-bg,#f0faf3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--text2);line-height:1.8">
-        <div style="font-weight:700;color:var(--accent2);margin-bottom:6px">📱 iOSで通知を使う手順</div>
-        1. 画面下の <strong>共有ボタン（□↑）</strong> をタップ<br>
-        2. <strong>「ホーム画面に追加」</strong> を選択して追加<br>
-        3. ホーム画面のアイコンからアプリを開く<br>
-        4. 設定から通知を有効にする<br>
-        <span style="font-size:10px;opacity:.7">※ iOS 16.4 以降 / Safari のみ対応</span>
+        <div style="font-size:11px;color:var(--text2);margin:6px 4px 0">全授業共通の欠席可能回数（デフォルト：5回）</div>
+        <button class="settings-btn" onclick="saveAbsLimit()" style="margin-top:8px">
+          <span class="sb-icon">✅</span>
+          <div class="sb-text">
+            <div>欠席上限を保存</div>
+            <div class="sb-sub">出席管理の警告基準に反映</div>
+          </div>
+        </button>
       </div>
     </div>
 
-    <div class="settings-section">
-      <div class="settings-section-title">データ管理</div>
-      <button class="settings-btn" onclick="closeSettings();openTransferModal('export')">
-        <span class="sb-icon">📲</span>
-        <div class="sb-text">
-          <div>QRコードでデータ転送</div>
-          <div class="sb-sub">QRコードで別の端末にデータを送受信</div>
-        </div>
-      </button>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-section-title">授業時間設定（開始時刻）</div>
-      <div id="periodTimeInputs" class="period-time-grid"></div>
-      <button class="settings-btn" onclick="savePeriodSettings()" style="margin-top:6px">
-        <span class="sb-icon">✅</span>
-        <div class="sb-text">
-          <div>時限設定を保存</div>
-          <div class="sb-sub">変更を保存して時間割に反映</div>
-        </div>
-      </button>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-section-title">欠席上限設定</div>
-      <div class="period-time-row" style="align-items:center;gap:8px">
-        <div class="period-time-label">上限回数</div>
-        <input id="absLimitInput" type="number" min="1" max="99" class="period-time-input" style="width:72px;text-align:center">
-        <span style="font-size:13px;color:var(--text2)">回</span>
-      </div>
-      <div style="font-size:11px;color:var(--text2);margin:6px 4px 0">全授業共通の欠席可能回数（デフォルト：5回）</div>
-      <button class="settings-btn" onclick="saveAbsLimit()" style="margin-top:8px">
-        <span class="sb-icon">✅</span>
-        <div class="sb-text">
-          <div>欠席上限を保存</div>
-          <div class="sb-sub">出席管理の警告基準に反映</div>
-        </div>
-      </button>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-accordion-hdr" onclick="toggleAccordion('catAccordion')">
-        <span class="sa-title">🏷️ カテゴリ管理</span>
-        <span class="sa-arrow">▶</span>
-      </div>
-      <div class="settings-accordion-body" id="catAccordion">
+    <!-- ペイン2: カテゴリ -->
+    <div class="settings-pane" id="stpane-2">
+      <div class="settings-section">
+        <div class="settings-section-title">🏷️ カテゴリ管理</div>
         <div id="customCatList"></div>
-        <div class="custom-cat-add">
-          <input type="text" id="newCatName" placeholder="カテゴリ名" maxlength="20">
-          <button class="custom-cat-add-btn" onclick="addCustomCategory()">＋ 追加</button>
+        <div class="custom-cat-add" style="flex-wrap:wrap;gap:6px;margin-top:10px">
+          <input type="text" id="newCatName" placeholder="カテゴリ名" maxlength="20" style="flex:1;min-width:120px">
+          <button class="custom-cat-add-btn" onclick="addCustomCategory()" style="flex-shrink:0">＋ 追加</button>
         </div>
         <div class="color-swatch" id="catColorSwatches" style="margin-top:10px"></div>
         <div style="font-size:11px;color:var(--text2);margin-top:6px">カレンダー・統計・タスク一覧で表示される色が適用されます</div>
       </div>
     </div>
 
-    <div class="settings-section">
-      <div class="settings-accordion-hdr" onclick="toggleAccordion('histAccordion')">
-        <span class="sa-title">🗂️ 削除履歴</span>
-        <span class="sa-arrow">▶</span>
-      </div>
-      <div class="settings-accordion-body" id="histAccordion">
-        <div id="deletionHistoryList"></div>
-        <button class="settings-btn" onclick="clearDeletionHistory()" style="color:var(--text2);margin-top:6px">
-          <span class="sb-icon">🗑️</span>
+    <!-- ペイン3: データ -->
+    <div class="settings-pane" id="stpane-3">
+      <div class="settings-section">
+        <div class="settings-section-title">データ転送</div>
+        <button class="settings-btn" onclick="closeSettings();openTransferModal('export')">
+          <span class="sb-icon">📲</span>
           <div class="sb-text">
-            <div>履歴をすべて消去</div>
-            <div class="sb-sub">削除履歴を空にする（最大50件保存）</div>
+            <div>QRコードでデータ転送</div>
+            <div class="sb-sub">QRコードで別の端末にデータを送受信</div>
           </div>
         </button>
       </div>
-    </div>
 
-    <div class="settings-section">
-      <div class="settings-accordion-hdr" onclick="toggleAccordion('overdueAccordion');renderOverdueList()">
-        <span class="sa-title">🚨 期限超過タスク</span>
-        <span class="sa-arrow">▶</span>
+      <div class="settings-section">
+        <div class="settings-accordion-hdr" onclick="toggleAccordion('histAccordion')">
+          <span class="sa-title">🗂️ 削除履歴</span>
+          <span class="sa-arrow">▶</span>
+        </div>
+        <div class="settings-accordion-body" id="histAccordion">
+          <div id="deletionHistoryList"></div>
+          <button class="settings-btn" onclick="clearDeletionHistory()" style="color:var(--text2);margin-top:6px">
+            <span class="sb-icon">🗑️</span>
+            <div class="sb-text">
+              <div>履歴をすべて消去</div>
+              <div class="sb-sub">削除履歴を空にする（最大50件保存）</div>
+            </div>
+          </button>
+        </div>
       </div>
-      <div class="settings-accordion-body" id="overdueAccordion">
-        <div id="overdueTaskList"></div>
-      </div>
-    </div>
 
-    <div class="settings-section">
-      <div class="settings-section-title">リセット</div>
-      <button class="settings-btn" onclick="closeSettings();tutReset()">
-        <span class="sb-icon">🎓</span>
-        <div class="sb-text">
-          <div>チュートリアルを再表示</div>
-          <div class="sb-sub">アプリの使い方ガイドをもう一度見る</div>
+      <div class="settings-section">
+        <div class="settings-accordion-hdr" onclick="toggleAccordion('overdueAccordion');renderOverdueList()">
+          <span class="sa-title">🚨 期限超過タスク</span>
+          <span class="sa-arrow">▶</span>
         </div>
-      </button>
-      <button class="settings-btn" onclick="resetAllData()" style="color:var(--red)">
-        <span class="sb-icon">🧹</span>
-        <div class="sb-text">
-          <div>全データを削除</div>
-          <div class="sb-sub">授業・タスク・出席・成績をすべて消去</div>
+        <div class="settings-accordion-body" id="overdueAccordion">
+          <div id="overdueTaskList"></div>
         </div>
-      </button>
-    </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">リセット</div>
+        <button class="settings-btn" onclick="closeSettings();tutReset()">
+          <span class="sb-icon">🎓</span>
+          <div class="sb-text">
+            <div>チュートリアルを再表示</div>
+            <div class="sb-sub">アプリの使い方ガイドをもう一度見る</div>
+          </div>
+        </button>
+      </div><!-- /settings-section リセット -->
+    </div><!-- /stpane-3 -->
 
     <div class="btn-row">
       <button class="btn-cancel" onclick="closeSettings()">閉じる</button>
@@ -2087,30 +2117,44 @@ function renderDashboard() {
   document.getElementById('todaySummary').innerHTML =
     `授業 ${todayCls.length}コマ<br>未完了 ${pending.length}件<br>習慣 ${rtDone}/${recurringTasks.length}完了`;
 
-  // ── 次の授業ピル
+  // ── 次の授業・予定ピル
   const nowMin = now.getHours()*60+now.getMinutes();
-  let nextEl = '';
+  // Build candidate list from classes
+  const candidates = [];
   for (const c of todayCls) {
     const ts = periodSettings[c.period] || '';
     if (!ts || ts==='オンデマンド') continue;
     const [hh,mm] = ts.split(':').map(Number);
-    const startMin = hh*60+mm;
-    if (startMin >= nowMin - 5) {
-      const isNow = nowMin >= startMin - 5 && nowMin < startMin + 90;
-      const tag  = isNow ? '授業中' : 'NEXT';
-      const meta = isNow ? `${ts}〜` : `${ts}〜 (あと${startMin-nowMin}分)`;
-      nextEl = `<div class="ts-next">
-        <span class="ts-next-tag">${tag}</span>
-        <span class="ts-next-name">${esc(c.name)}</span>
-        <span class="ts-next-meta">${esc(meta)}${c.room?' · '+esc(c.room):''}</span>
+    candidates.push({ type:'class', startMin: hh*60+mm, timeStr: ts, name: c.name, room: c.room||'', color: c.color||'' });
+  }
+  // Add today's timed calEvents
+  const calEvents = sto.get('calEvents', []);
+  for (const e of calEvents) {
+    if (e.noTime || e.sh == null || !e.dates || !e.dates.includes(TODAY)) continue;
+    candidates.push({ type:'event', startMin: e.sh*60+(e.sm||0), timeStr: `${String(e.sh).padStart(2,'0')}:${String(e.sm||0).padStart(2,'0')}`, name: e.name, room: '', color: e.color||'var(--accent)' });
+  }
+  // Sort by start time
+  candidates.sort((a,b)=>a.startMin-b.startMin);
+  let nextEl = '';
+  for (const item of candidates) {
+    if (item.startMin >= nowMin - 5) {
+      const isNow = nowMin >= item.startMin - 5 && nowMin < item.startMin + 90;
+      const tagLabel = isNow ? (item.type==='event' ? '進行中' : '授業中') : 'NEXT';
+      const meta = isNow ? `${item.timeStr}〜` : `${item.timeStr}〜 (あと${item.startMin-nowMin}分)`;
+      const tagStyle = item.type==='event' ? `background:${item.color};color:#fff` : '';
+      const borderStyle = item.type==='event' ? `border-left:3px solid ${item.color}` : '';
+      nextEl = `<div class="ts-next" style="${borderStyle}">
+        <span class="ts-next-tag" style="${tagStyle}">${tagLabel}</span>
+        <span class="ts-next-name">${esc(item.name)}</span>
+        <span class="ts-next-meta">${esc(meta)}${item.room?' · '+esc(item.room):''}</span>
       </div>`;
       break;
     }
   }
-  if (!nextEl && todayCls.length > 0) {
+  if (!nextEl && candidates.length > 0) {
     nextEl = `<div class="ts-next" style="opacity:.6">
       <span class="ts-next-tag" style="background:rgba(0,0,0,.06);color:var(--text2)">終了</span>
-      <span class="ts-next-name" style="font-weight:500;color:var(--text2)">今日の授業はすべて終了しました</span>
+      <span class="ts-next-name" style="font-weight:500;color:var(--text2)">今日の予定はすべて終了しました</span>
     </div>`;
   }
   document.getElementById('todayNextClass').innerHTML = nextEl;
@@ -2168,6 +2212,38 @@ function renderDashboard() {
           </div>
         </div>`;
       }).join('');
+
+  // ── 今日の予定（calEvents）
+  const todayEvList  = document.getElementById('todayEventsList');
+  const todayEvSec   = document.getElementById('todayEventsSection');
+  const calEventsAll = sto.get('calEvents', []);
+  const todayEvs     = calEventsAll
+    .filter(e => e.dates && e.dates.includes(TODAY))
+    .sort((a,b) => {
+      if (a.noTime && b.noTime) return 0;
+      if (a.noTime) return 1;
+      if (b.noTime) return -1;
+      return (a.sh*60+(a.sm||0)) - (b.sh*60+(b.sm||0));
+    });
+  if (todayEvs.length === 0) {
+    todayEvSec.style.display = 'none';
+    todayEvList.innerHTML = '';
+  } else {
+    todayEvSec.style.display = '';
+    todayEvList.innerHTML = todayEvs.map(e => {
+      const timeStr = e.noTime ? '終日' : `${String(e.sh).padStart(2,'0')}:${String(e.sm||0).padStart(2,'0')}〜${String(e.eh??'').padStart(2,'0')}:${String(e.em??'').padStart(2,'0')}`;
+      const endStr  = (!e.noTime && e.eh != null) ? `${String(e.eh).padStart(2,'0')}:${String(e.em||0).padStart(2,'0')}` : '';
+      const dispTime = e.noTime ? '終日' : `${String(e.sh).padStart(2,'0')}:${String(e.sm||0).padStart(2,'0')}` + (endStr ? `〜${endStr}` : '');
+      const color = e.color || 'var(--accent)';
+      return `<div class="tl-item" style="border-left-color:${color};cursor:pointer" onclick="showPage('calendar',null)">
+        <div class="tl-date" style="color:${color}">${esc(dispTime)}</div>
+        <div style="flex:1">
+          <div class="tl-title">${esc(e.name)}</div>
+          ${e.memo ? `<div class="tl-sub">${esc(e.memo)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   renderUpcomingDash();
 }
@@ -3171,13 +3247,13 @@ function buildEvTimeSels() {
 function buildEvColorRow(selected) {
   _evColor = selected || EV_COLORS[0];
   document.getElementById('evColorRow').innerHTML = EV_COLORS.map(c =>
-    `<div class="ev-color-swatch${c===_evColor?' selected':''}" style="background:${c}" onclick="selectEvColor('${c}')"></div>`
+    `<div class="ev-color-swatch${c===_evColor?' selected':''}" style="background:${c}" data-color="${c}" onclick="selectEvColor('${c}')"></div>`
   ).join('');
 }
 function selectEvColor(c) {
   _evColor = c;
   document.querySelectorAll('.ev-color-swatch').forEach(s => {
-    s.classList.toggle('selected', s.style.background===c || s.style.backgroundColor===c);
+    s.classList.toggle('selected', s.dataset.color === c);
   });
 }
 
@@ -4239,6 +4315,7 @@ function openSettings() {
   const input = document.getElementById('mobileUrlInput');
   if (input) input.value = raw;
   document.getElementById('settingsModal').classList.add('show');
+  settingsTab(0);
   setTimeout(updateQR, 100);
 }
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show')}
@@ -4897,6 +4974,12 @@ function helpTab(i) {
   document.querySelectorAll('.help-tab').forEach((t,j)=>t.classList.toggle('act',j===i));
   document.querySelectorAll('.help-sec').forEach((s,j)=>s.classList.toggle('act',j===i));
   document.getElementById('helpModal').querySelector('.modal').scrollTop = 0;
+}
+
+function settingsTab(i) {
+  document.querySelectorAll('.settings-tab').forEach((t,j)=>t.classList.toggle('act',j===i));
+  document.querySelectorAll('.settings-pane').forEach((p,j)=>p.classList.toggle('act',j===i));
+  document.getElementById('settingsModal').querySelector('.modal').scrollTop = 0;
 }
 
 // ── TUTORIAL ──

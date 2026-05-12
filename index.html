@@ -591,6 +591,19 @@
   .task-hm-stat{text-align:center}
   .task-hm-stat-val{font-size:16px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:-0.01em}
   .task-hm-stat-lbl{font-size:10px;color:var(--text2);margin-top:1px}
+  .thm-week-row{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:10px;padding:8px 10px;background:var(--surface);border-radius:8px;flex-wrap:wrap}
+  .thm-week-num{font-weight:700;font-family:'Outfit',sans-serif}
+  .thm-week-lbl{color:var(--text2);font-size:11px}
+  .thm-done-badge{margin-left:auto;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+  .thm-bar-section{margin-bottom:10px}
+  .thm-bar-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500}
+  .thm-bar-chart{display:flex;gap:3px;align-items:flex-end;height:60px}
+  .thm-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%}
+  .thm-bar-col.is-today .thm-bar-day{color:var(--accent2);font-weight:700}
+  .thm-bwrap{flex:1;width:100%;display:flex;align-items:flex-end}
+  .thm-bfill{width:100%;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s ease}
+  .thm-bval{font-size:8px;color:var(--text2);height:12px;display:flex;align-items:center;white-space:nowrap}
+  .thm-bar-day{font-size:10px;color:var(--text2);font-weight:600;line-height:1}
   .time-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px}
   .time-bar-bg{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
   .time-bar-fill{height:100%;border-radius:3px}
@@ -3092,14 +3105,13 @@ function renderStats() {
     maxStreak=Math.max(maxStreak,calcStreak(rt));
   });
 
-  // Bar chart (last 7 days)
-  const barDays=[];
+  // 直近7日 日付リスト（タスク別バーチャート用）
+  const last7Dates=[];
   for(let i=6;i>=0;i--){
     const d=new Date(TODAY_DATE); d.setDate(d.getDate()-i);
     const ds=d.toISOString().split('T')[0];
-    barDays.push({label:['日','月','火','水','木','金','土'][d.getDay()],dateStr:`${d.getMonth()+1}/${d.getDate()}`,ds,m:dayMap[ds]||0,isToday:ds===TODAY});
+    last7Dates.push({label:['日','月','火','水','木','金','土'][d.getDay()],ds,isToday:ds===TODAY});
   }
-  const maxBar=Math.max(...barDays.map(d=>d.m),1);
 
   // ── Per-task heatmap grid setup (5 cols = 5 weeks, 7 rows = Mon〜Sun) ──
   const todayDow  = TODAY_DATE.getDay();
@@ -3134,6 +3146,19 @@ function renderStats() {
         };
         const compMap = {};
         comps.forEach(c=>{ compMap[c.date]=(compMap[c.date]||0)+c.minutes; });
+
+        // 今週の集計
+        const wkStart = getWeekStart();
+        const wkComps = comps.filter(c=>c.date>=wkStart&&c.date<=TODAY);
+        const wkCnt   = wkComps.length;
+        const wkMin   = wkComps.reduce((s,c)=>s+c.minutes,0);
+        const doneToday = isCompletedNow(rt);
+
+        // 直近7日バーチャート（タスク別）
+        const rtBars = last7Dates.map(d=>({...d, m:compMap[d.ds]||0}));
+        const rtMaxBar = Math.max(...rtBars.map(b=>b.m), 1);
+
+        // 5週間グリッド
         const grid = Array(7).fill(null).map(()=>Array(5).fill(null));
         for(let col=0;col<5;col++){
           for(let row=0;row<7;row++){
@@ -3152,6 +3177,22 @@ function renderStats() {
               </div>
             </div>
             ${streak>0?`<span class="streak-badge" style="font-size:14px">🔥 ${streak}${rt.recurrence==='daily'?'日':'週'}</span>`:'<span style="font-size:12px;color:var(--text2)">ストリークなし</span>'}
+          </div>
+          <div class="thm-week-row">
+            <span class="thm-week-num" style="color:${color}">${wkCnt}回</span>
+            <span class="thm-week-lbl">今週完了</span>
+            ${wkMin?`<span class="thm-week-num" style="color:var(--blue)">${fmtMin(wkMin)}</span><span class="thm-week-lbl">今週合計</span>`:''}
+            ${doneToday?`<span class="thm-done-badge">✓ 本日達成</span>`:''}
+          </div>
+          <div class="thm-bar-section">
+            <div class="thm-bar-label">直近7日間</div>
+            <div class="thm-bar-chart">
+              ${rtBars.map(b=>`<div class="thm-bar-col${b.isToday?' is-today':''}">
+                <div class="thm-bval">${b.m?fmtMin(b.m):''}</div>
+                <div class="thm-bwrap"><div class="thm-bfill" style="height:${(b.m/rtMaxBar*100).toFixed(0)}%;background:${b.isToday?'var(--accent)':`rgba(${cr},${cg},${cb},0.75)`}"></div></div>
+                <div class="thm-bar-day">${b.label}</div>
+              </div>`).join('')}
+            </div>
           </div>
           <div class="thm-wrap">
             <div class="thm-dow-col">
@@ -3191,22 +3232,8 @@ function renderStats() {
       <div class="stat-card"><div class="stat-num" style="color:var(--green)">${weekCount}</div><div class="stat-label">今週の完了回数</div></div>
       <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${maxStreak}</div><div class="stat-label">最長ストリーク</div></div>
     </div>
-    <div class="bar-chart-wrap">
-      <div class="bar-chart-header">
-        <div class="bar-chart-title">直近7日間の活動</div>
-        <div class="bar-chart-range">${barDays[0].dateStr} 〜 ${barDays[6].dateStr}</div>
-      </div>
-      <div class="bar-chart">
-        ${barDays.map(d=>`<div class="bar-col${d.isToday?' today-col':''}">
-          <div class="bar-val${d.m?' has-val':''}">${d.m?fmtMin(d.m):''}</div>
-          <div class="bar-wrap"><div class="bar-fill" style="height:${(d.m/maxBar*100).toFixed(0)}%;background:${d.isToday?'var(--accent)':'var(--accent2)'}"></div></div>
-          <div class="bar-day">${d.label}</div>
-          <div class="bar-date">${d.dateStr}</div>
-        </div>`).join('')}
-      </div>
-    </div>
     <div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px">🗓️ タスク別習慣カレンダー</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">📊 タスク別統計</div>
       ${taskHmCards}
     </div>`;
 }

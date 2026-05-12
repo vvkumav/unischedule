@@ -1487,6 +1487,17 @@
           <span style="font-size:10px;opacity:.7">※ iOS 16.4 以降 / Safari のみ対応</span>
         </div>
       </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">アプリ更新</div>
+        <button class="settings-btn" onclick="updateApp()">
+          <span class="sb-icon">🔄</span>
+          <div class="sb-text">
+            <div>最新バージョンに更新</div>
+            <div class="sb-sub" id="updateSubText">キャッシュを消去して最新版を読み込みます</div>
+          </div>
+        </button>
+      </div>
     </div>
 
     <!-- ペイン1: 授業設定 -->
@@ -4329,6 +4340,23 @@ function openSettings() {
   setTimeout(updateQR, 100);
 }
 function closeSettings(){document.getElementById('settingsModal').classList.remove('show')}
+
+async function updateApp() {
+  const btn = document.querySelector('[onclick="updateApp()"]');
+  const sub = document.getElementById('updateSubText');
+  if (btn) btn.style.opacity = '0.6';
+  if (sub) sub.textContent = '更新中...';
+  // キャッシュAPIが使える場合はすべて消去
+  if ('caches' in window) {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    } catch(e) {}
+  }
+  // キャッシュバスター付きURLで強制リロード
+  const url = location.pathname + '?_=' + Date.now();
+  location.replace(url);
+}
 function renderOverdueList() {
   const el = document.getElementById('overdueTaskList');
   if (!el) return;

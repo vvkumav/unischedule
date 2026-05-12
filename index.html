@@ -746,6 +746,16 @@
   @media(max-width:560px){
     .add-btn-label{display:none}
   }
+  /* ── iOS Safari auto-zoom prevention ──
+     font-size < 16px のinputにフォーカスするとズームインしたまま戻らない。
+     モバイル幅では全テキスト系inputを16px以上に強制して防ぐ。 */
+  @media(max-width:767px){
+    input[type="text"],input[type="number"],input[type="url"],
+    input[type="email"],input[type="search"],input[type="tel"],
+    input[type="password"],input:not([type]),select,textarea{
+      font-size:16px!important;
+    }
+  }
   /* ── VERY NARROW (≤380px, e.g. iPhone SE) ── */
   @media(max-width:380px){
     .form-cols{grid-template-columns:1fr}

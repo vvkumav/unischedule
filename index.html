@@ -168,10 +168,10 @@
 
 
   /* ── STATS CARDS ── */
-  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
-  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-  .stat-num{font-size:26px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:-0.02em}
-  .stat-label{font-size:11px;color:var(--text2);margin-top:2px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 6px;box-shadow:0 1px 4px rgba(0,0,0,.06);text-align:center}
+  .stat-num{font-size:22px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:-0.02em}
+  .stat-label{font-size:10px;color:var(--text2);margin-top:2px;line-height:1.3}
 
   /* ── DASH GRID ── */
   .dash-grid{display:grid;grid-template-columns:1fr;gap:16px}
@@ -749,9 +749,11 @@
     .nav-cat-del:hover{background:rgba(239,68,68,.15);color:#ef4444}
     .app-body{margin-left:220px;margin-bottom:0;height:calc(100vh - var(--header-h) - var(--safe-t));height:calc(100dvh - var(--header-h) - var(--safe-t))}
     .main{padding:24px}
-    .stats{grid-template-columns:repeat(4,1fr);gap:12px}
+    .stats{gap:12px}
+    .stat-card{padding:12px 14px}
     .stats-summary{grid-template-columns:repeat(3,1fr)}
     .stat-num{font-size:28px}
+    .stat-label{font-size:11px}
     .dash-grid{grid-template-columns:1fr 1fr}
     .task-grid{grid-template-columns:1fr 1fr}
     .cal-day{min-height:110px;padding:8px 6px}
@@ -796,7 +798,7 @@
   /* ── VERY NARROW (≤380px, e.g. iPhone SE) ── */
   @media(max-width:380px){
     .form-cols{grid-template-columns:1fr}
-    .stats{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
     .stats-summary{grid-template-columns:1fr}
     .bn-item{min-width:50px;font-size:8.5px}
     .bn-item .bn-icon{font-size:19px}

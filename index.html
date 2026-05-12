@@ -1956,6 +1956,166 @@ const sto = {
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const safeUrl = u => /^https?:\/\//i.test(u||'') ? u : '#';
 
+// ── MODULES ──
+const Store = {
+  tasks:       () => sto.set('tasks', tasks),
+  classes:     () => sto.set('classes', classes),
+  attendance:  () => sto.set('attendance', attendance),
+  recurring:   () => sto.set('recurringTasks', recurringTasks),
+  calEvents:   () => sto.set('calEvents', calEvents),
+  grades:      () => sto.set('grades', grades),
+  sessions:    () => sto.set('sessionCounts', sessionCounts),
+  period:      () => sto.set('periodSettings', periodSettings),
+  cats:        () => sto.set('customCats', customCategories),
+  absLimit:    () => sto.set('absLimitCount', absLimitCount),
+  history:     () => sto.set('deletionHistory', deletionHistory),
+  hiddenCats:  () => sto.set('hiddenBuiltInCats', hiddenBuiltInCats),
+};
+
+const Logic = {
+  // Task filtering
+  getOverdue: () => tasks.filter(t => !t.done && t.due && daysUntil(t.due) < 0)
+                         .sort((a,b) => a.due < b.due ? -1 : 1),
+
+  getPendingTasks: () => tasks.filter(t => !t.done && t.due),
+
+  getFilteredTasks(filter, sort, query) {
+    let list = tasks.filter(t => t.due);
+    if (filter && filter !== '') list = list.filter(t => t.cat === filter);
+    if (query) {
+      const q = query.toLowerCase();
+      list = list.filter(t =>
+        (t.name||'').toLowerCase().includes(q) ||
+        (t.subj||'').toLowerCase().includes(q) ||
+        (t.note||'').toLowerCase().includes(q)
+      );
+    }
+    // sorting
+    if (sort==='due') list.sort((a,b) => a.due<b.due?-1:1);
+    else if (sort==='created_new') list.sort((a,b)=>b.id-a.id);
+    else if (sort==='created_old') list.sort((a,b)=>a.id-b.id);
+    else if (sort==='related') list.sort((a,b)=>(a.subj||'').localeCompare(b.subj||'','ja'));
+    else if (sort==='name') list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
+    return list;
+  },
+
+  // Today's classes (for current semester)
+  getTodayClasses() {
+    const { year, term } = getSelectedSemester();
+    const dow = new Date().getDay();
+    const mapped = DOW_MAP[dow] ?? -1;
+    return classes.filter(c =>
+      c.day === mapped &&
+      (c.year == null || c.year === year) &&
+      (c.term == null || c.term === term)
+    );
+  },
+
+  // Absence warning count
+  getAbsenceWarnings() {
+    return classes.filter(c => {
+      const cnt = attendance.filter(a => a.classId === c.id).length;
+      const lim = c.absLimit ?? absLimitCount;
+      return cnt >= lim - 1;
+    }).length;
+  },
+
+  // Recurring task due today
+  getRecurDueToday: () => recurringTasks.filter(rt => isRecurDueToday(rt) && !isCompletedNow(rt)),
+};
+
+const Notify = {
+  async send(title, body, tag) {
+    return sendNotification(title, body, tag);
+  },
+
+  getTodayPayload() {
+    const { year, term } = getSelectedSemester();
+    const dow = new Date().getDay();
+    const mapped = DOW_MAP[dow] ?? -1;
+    const todayClasses = classes.filter(c =>
+      c.day === mapped &&
+      (c.year == null || c.year === year) &&
+      (c.term == null || c.term === term)
+    ).sort((a,b) => a.period - b.period);
+
+    const todayEvs = calEvents.filter(e =>
+      e.dates?.includes(TODAY) && e.notif !== false
+    );
+
+    const todayRTs = recurringTasks.filter(rt =>
+      !isCompletedNow(rt) && isRecurDueToday(rt) && rt.notif !== false
+    );
+
+    const dueTasks = tasks.filter(t => !t.done && t.due);
+    return {
+      classes: todayClasses,
+      events: todayEvs,
+      recurring: todayRTs,
+      today:    dueTasks.filter(t => daysUntil(t.due) === 0),
+      tomorrow: dueTasks.filter(t => daysUntil(t.due) === 1),
+      soon:     dueTasks.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 3),
+      overdue:  dueTasks.filter(t => daysUntil(t.due) < 0),
+    };
+  },
+
+  async sendAll(prefix, payload) {
+    let notified = 0;
+    const p = payload || Notify.getTodayPayload();
+
+    if (p.classes.length > 0) {
+      const body = p.classes.map(c => `${c.period+1}限: ${c.name}${c.room?' ('+c.room+')':''}`).join('\n');
+      await Notify.send('📚 今日の時間割', body, prefix+'-classes');
+      notified++;
+    }
+    if (p.events.length > 0) {
+      const body = p.events.map(e => {
+        const tl = (!e.noTime && e.sh != null) ? `${e.sh}:${String(e.sm||0).padStart(2,'0')} ` : '';
+        return `・${tl}${e.name}`;
+      }).join('\n');
+      await Notify.send(`📅 今日の予定 (${p.events.length}件)`, body, prefix+'-events');
+      notified++;
+    }
+    if (p.recurring.length > 0) {
+      const body = p.recurring.map(t => `・${t.name}`).join('\n');
+      await Notify.send(`🔁 本日の習慣タスク (${p.recurring.length}件)`, body, prefix+'-rt');
+      notified++;
+    }
+    if (p.today.length > 0) {
+      for (const t of p.today) {
+        await Notify.send(`⚠️ 本日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, prefix+'-today-'+t.id);
+        notified++;
+      }
+    }
+    if (p.tomorrow.length > 0) {
+      for (const t of p.tomorrow) {
+        await Notify.send(`📌 明日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, prefix+'-tmrw-'+t.id);
+        notified++;
+      }
+    }
+    if (p.soon.length > 0) {
+      for (const t of p.soon) {
+        await Notify.send(`📋 ${daysUntil(t.due)}日後締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, prefix+'-soon-'+t.id);
+        notified++;
+      }
+    }
+    if (p.overdue.length > 0) {
+      const body = p.overdue.map(t => `・${t.name}`).join('\n');
+      await Notify.send(`🚨 期限超過タスク (${p.overdue.length}件)`, body, prefix+'-overdue');
+      notified++;
+    }
+    return notified;
+  }
+};
+
+const Validate = {
+  task: t => !!(t.name?.trim()),
+  class: c => !!(c.name?.trim()) && Number.isInteger(c.day) && Number.isInteger(c.period),
+  calEvent: e => !!(e.name?.trim()) && Array.isArray(e.dates) && e.dates.length > 0,
+  color: c => /^#[0-9a-fA-F]{6}$/.test(c || ''),
+  minutes: m => Number.isFinite(m) && m >= 0 && m <= 1440,
+};
+
 let tasks = sto.get('tasks',[]);
 let recurringTasks = sto.get('recurringTasks',[]);
 let classes = sto.get('classes',[]);
@@ -2059,7 +2219,7 @@ const MAX_HISTORY = 50;
 function pushHistory(type, data) {
   deletionHistory.unshift({ hid: Date.now(), type, data, deletedAt: new Date().toISOString() });
   if (deletionHistory.length > MAX_HISTORY) deletionHistory = deletionHistory.slice(0, MAX_HISTORY);
-  sto.set('deletionHistory', deletionHistory);
+  Store.history();
 }
 function getPeriods() { return periodSettings.map((t,i)=>`${i+1}限\n${t}`); }
 
@@ -2389,7 +2549,7 @@ function dashToggleRecurring(id) {
     else if (rt.recurrence==='weekly')  rt.completions=rt.completions.filter(c=>getWeekKey(c.date)!==THIS_WEEK);
     else if (rt.recurrence==='monthly') rt.completions=rt.completions.filter(c=>getMonthKey(c.date)!==THIS_MONTH);
     else if (rt.recurrence==='yearly')  rt.completions=rt.completions.filter(c=>getYearKey(c.date)!==THIS_YEAR);
-    sto.set('recurringTasks',recurringTasks);
+    Store.recurring();
     renderDashboard();
     refreshAttDetailPanel();
   } else {
@@ -2443,13 +2603,13 @@ function deleteClass(id) {
   if(!confirm('この授業を削除しますか？'))return;
   const cls = classes.find(c=>c.id===id);
   if (cls) pushHistory('class', cls);
-  classes=classes.filter(c=>c.id!==id); sto.set('classes',classes); renderTimetable();
+  classes=classes.filter(c=>c.id!==id); Store.classes(); renderTimetable();
 }
 
 // ── ATTENDANCE ──
 function addAbsence(classId) {
   attendance.push({id: Date.now(), classId, date: TODAY});
-  sto.set('attendance', attendance);
+  Store.attendance();
   renderTimetable();
   if (currentTTTab === 'att') { refreshAttTabs(); refreshAttDetail(); }
 }
@@ -2458,7 +2618,7 @@ function addAbsenceWithDate(classId) {
   const inputEl = document.getElementById('abs-date-' + classId);
   const date = inputEl ? (inputEl.value || TODAY) : TODAY;
   attendance.push({id: Date.now(), classId, date});
-  sto.set('attendance', attendance);
+  Store.attendance();
   renderTimetable();
   refreshAttTabs();
   refreshAttDetail();
@@ -2466,7 +2626,7 @@ function addAbsenceWithDate(classId) {
 
 function removeAbsence(id) {
   attendance = attendance.filter(a => a.id !== id);
-  sto.set('attendance', attendance);
+  Store.attendance();
   renderTimetable();
   refreshAttTabs();
   refreshAttDetail();
@@ -2477,7 +2637,7 @@ function updateSessionsHeld(classId, delta) {
   const max = cls ? (cls.totalSessions || 15) : 15;
   const cur = sessionCounts[classId] || 0;
   sessionCounts[classId] = Math.min(max, Math.max(0, cur + delta));
-  sto.set('sessionCounts', sessionCounts);
+  Store.sessions();
   refreshAttDetail();
 }
 
@@ -2720,7 +2880,7 @@ function toggleTaskFromClass(taskId, classId) {
   const t = tasks.find(x=>x.id===taskId);
   if (!t) return;
   t.done = !t.done;
-  sto.set('tasks', tasks);
+  Store.tasks();
   // 出席詳細パネルを再描画
   const cls = classes.find(c=>c.id===classId);
   if (cls) {
@@ -2759,7 +2919,7 @@ function saveEditMemo() {
   if (!comp) return;
   const memo = document.getElementById('em_memo').value.trim();
   if (memo) comp.memo = memo; else delete comp.memo;
-  sto.set('recurringTasks', recurringTasks);
+  Store.recurring();
   closeEditMemoModal();
   refreshAttDetailPanel();
 }
@@ -2847,14 +3007,14 @@ function saveGrade() {
     date: document.getElementById('g_date').value,
     note: document.getElementById('g_note').value.trim()
   });
-  sto.set('grades', grades);
+  Store.grades();
   closeGradeModal();
   renderGrades();
 }
 
 function deleteGrade(id) {
   grades = grades.filter(g=>g.id!==id);
-  sto.set('grades', grades);
+  Store.grades();
   renderGrades();
 }
 
@@ -2995,12 +3155,12 @@ function taskHTML(t, searchF='') {
 
 function toggleTask(id) {
   const t=tasks.find(t=>t.id===id);
-  if(t){t.done=!t.done;sto.set('tasks',tasks);renderTasks();renderDashboard();}
+  if(t){t.done=!t.done;Store.tasks();renderTasks();renderDashboard();}
 }
 function deleteTask(id) {
   const t = tasks.find(x=>x.id===id);
   if (t) pushHistory('task', t);
-  tasks=tasks.filter(t=>t.id!==id); sto.set('tasks',tasks); renderTasks(); renderDashboard();
+  tasks=tasks.filter(t=>t.id!==id); Store.tasks(); renderTasks(); renderDashboard();
 }
 function toggleRecurring(id) {
   const rt=recurringTasks.find(r=>r.id===id);
@@ -3010,7 +3170,7 @@ function toggleRecurring(id) {
     else if(rt.recurrence==='weekly')  rt.completions=rt.completions.filter(c=>getWeekKey(c.date)!==THIS_WEEK);
     else if(rt.recurrence==='monthly') rt.completions=rt.completions.filter(c=>getMonthKey(c.date)!==THIS_MONTH);
     else if(rt.recurrence==='yearly')  rt.completions=rt.completions.filter(c=>getYearKey(c.date)!==THIS_YEAR);
-    sto.set('recurringTasks',recurringTasks);
+    Store.recurring();
     renderTasks(); renderDashboard();
   } else {
     openTimeModal(id);
@@ -3021,7 +3181,7 @@ function deleteRecurring(id) {
   const rt = recurringTasks.find(r=>r.id===id);
   if (rt) pushHistory('recurringTask', rt);
   recurringTasks=recurringTasks.filter(r=>r.id!==id);
-  sto.set('recurringTasks',recurringTasks);
+  Store.recurring();
   renderTasks(); renderDashboard();
 }
 
@@ -3515,20 +3675,21 @@ function saveCalEvent() {
     em: noTime ? null : parseInt(document.getElementById('ev_em').value),
     notif: getNotifBtn('ev_notif'),
   };
+  if (!Validate.calEvent(ev)) console.warn('[Validate] calEvent failed validation:', ev);
   if (_editEvId) {
     const idx = calEvents.findIndex(e=>e.id===_editEvId);
     if (idx>=0) calEvents[idx]=ev;
   } else {
     calEvents.push(ev);
   }
-  sto.set('calEvents', calEvents);
+  Store.calEvents();
   closeCalEventModal();
   renderCalendar();
 }
 function deleteCalEvent(id) {
   if (!confirm('この予定を削除しますか？')) return;
   calEvents = calEvents.filter(e=>e.id!==id);
-  sto.set('calEvents', calEvents);
+  Store.calEvents();
   document.getElementById('calEventDetailModal')?.classList.remove('show');
   renderCalendar();
 }
@@ -3844,6 +4005,7 @@ function saveTask() {
   try {
     if(recur!=='none'){
       const rt={id:editTaskId||Date.now(),name,cat,pri,subj,note,classId:classId||null,recurrence:recur,notif,completions:[]};
+      if (!Validate.task(rt)) console.warn('[Validate] recurring task failed validation:', rt);
       // 繰り返し種別ごとの追加設定
       if (recur === 'weekly') {
         const days = getWeekDays();
@@ -3867,15 +4029,16 @@ function saveTask() {
         if(idx>=0){rt.completions=recurringTasks[idx].completions;recurringTasks[idx]=rt;}
         else recurringTasks.push(rt);
       } else recurringTasks.push(rt);
-      sto.set('recurringTasks',recurringTasks);
+      Store.recurring();
     } else {
       const t={id:editTaskId||Date.now(),name,cat,pri,due,subj,classId:classId||null,note,notif,done:false};
+      if (!Validate.task(t)) console.warn('[Validate] task failed validation:', t);
       if(editTaskId){
         const idx=tasks.findIndex(x=>x.id===editTaskId);
         if(idx>=0){t.done=tasks[idx].done;tasks[idx]=t;}
         else tasks.push(t);
       } else tasks.push(t);
-      sto.set('tasks',tasks);
+      Store.tasks();
     }
   } catch(e) { console.error('タスク保存エラー:', e); }
   if (returnToTT) {
@@ -3916,7 +4079,7 @@ function saveTime(skip=false) {
       const entry={date:TODAY,minutes};
       if(memo) entry.memo=memo;
       rt.completions.push(entry);
-      sto.set('recurringTasks',recurringTasks);
+      Store.recurring();
     }
   } catch(e) { console.error('時間記録保存エラー:', e); }
   const activePage=document.querySelector('.page.active')?.id;
@@ -3976,7 +4139,7 @@ function migrateClassTerms() {
     if (!c.year || !c.term) { changed = true; return {...c, year: ay, term}; }
     return c;
   });
-  if (changed) sto.set('classes', classes);
+  if (changed) Store.classes();
 }
 
 // ── ADD CLASS ──
@@ -4055,6 +4218,7 @@ function saveClass() {
     color:selectedColor,
     notif: getNotifBtn('c_notif')
   };
+  if (!Validate.class(c)) console.warn('[Validate] class failed validation:', c);
   if(!editClassId && classes.find(x=>x.day===c.day&&x.period===c.period)){
     if(!confirm('この時間には既に授業があります。上書きしますか？'))return;
     classes=classes.filter(x=>!(x.day===c.day&&x.period===c.period));
@@ -4065,7 +4229,7 @@ function saveClass() {
   } else {
     classes.push(c);
   }
-  sto.set('classes',classes); closeClassModal(); buildSemesterSelect(); renderTimetable();
+  Store.classes(); closeClassModal(); buildSemesterSelect(); renderTimetable();
 }
 function renderSwatches() {
   document.getElementById('colorSwatches').innerHTML=CLASS_COLORS.map(c=>
@@ -4096,7 +4260,7 @@ function saveAbsLimit() {
   const v = parseInt(document.getElementById('absLimitInput')?.value);
   if (isNaN(v) || v < 1 || v > 99) { alert('1〜99の間で入力してください'); return; }
   absLimitCount = v;
-  sto.set('absLimitCount', absLimitCount);
+  Store.absLimit();
   if (document.getElementById('tt-panel-att')?.style.display !== 'none') renderAttendance();
   alert(`欠席上限を ${absLimitCount}回 に保存しました`);
 }
@@ -4106,7 +4270,7 @@ function savePeriodSettings() {
     const v = document.getElementById(`pt_${i}`)?.value.trim();
     return v || DEFAULT_PERIOD_TIMES[i];
   });
-  sto.set('periodSettings', periodSettings);
+  Store.period();
   renderPeriodSelect();
   renderTimetable();
   alert('時限設定を保存しました');
@@ -4498,65 +4662,7 @@ async function checkDeadlinesNow() {
     alert('通知を有効にしてから使用してください。');
     return;
   }
-  let notified = 0;
-  const now = new Date();
-  const dow = now.getDay();
-
-  // ── 当日の時間割
-  const DOW_MAP_N = {0:'日',1:'月',2:'火',3:'水',4:'木',5:'金',6:'土'};
-  const { year: cY, term: cT } = getSelectedSemester();
-  const todayClasses = classes
-    .filter(c => c.notif !== false)
-    .filter(c => !isNaN(cY) ? (c.year===cY && c.term===cT) : true)
-    .filter(c => c.day != null && (c.day+1)%7 === dow || (c.day===6 && dow===0) || (()=>{
-      const dowMap2 = [0,1,2,3,4,5,6]; // mon=0 in data, sun=0 in JS
-      // c.day: 0=月,1=火,...,5=土,6=日  JS dow: 0=日,1=月,...,6=土
-      const jsDow = (c.day + 1) % 7; // 月(0)->1, ..., 土(5)->6, 日(6)->0
-      return jsDow === dow;
-    })())
-    .sort((a,b) => a.period - b.period);
-  if (todayClasses.length > 0) {
-    const body = todayClasses.map(c => `${c.period+1}限: ${c.name}${c.room?' ('+c.room+')':''}`).join('\n');
-    await sendNotification('📚 今日の時間割', body, 'today-classes');
-    notified++;
-  }
-
-  // ── 当日の予定 (calEvents)
-  const td = TODAY;
-  const todayEvs = calEvents.filter(e => e.dates.includes(td) && e.notif !== false);
-  for (const e of todayEvs) {
-    const timeLbl = (!e.noTime && e.sh != null) ? ` ${e.sh}:${String(e.sm).padStart(2,'0')}〜` : '';
-    await sendNotification(`📅 今日の予定: ${e.name}`, `${timeLbl}${e.memo||''}`.trim(), 'ev-today-'+e.id);
-    notified++;
-  }
-
-  // ── 繰り返しタスク（本日が対象日）
-  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt) && rt.notif !== false);
-  if (todayRTs.length > 0) {
-    const body = todayRTs.map(t => `・${t.name}`).join('\n');
-    await sendNotification(`🔁 本日の習慣タスク (${todayRTs.length}件)`, body, 'rt-today');
-    notified++;
-  }
-
-  // ── 通常タスク: 今日・明日・2〜3日以内（期限超過は除外）
-  const pending = tasks.filter(t => !t.done && t.due && t.notif !== false);
-  const today   = pending.filter(t => daysUntil(t.due) === 0);
-  const tomorrow = pending.filter(t => daysUntil(t.due) === 1);
-  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 3);
-
-  for (const t of today) {
-    await sendNotification(`⚠️ 本日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'today-'+t.id);
-    notified++;
-  }
-  for (const t of tomorrow) {
-    await sendNotification(`📌 明日締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'tmrw-'+t.id);
-    notified++;
-  }
-  for (const t of soon) {
-    await sendNotification(`📋 ${daysUntil(t.due)}日後締め切り: ${t.name}`, `${t.cat}${t.subj?' / '+t.subj:''}`, 'soon-'+t.id);
-    notified++;
-  }
-
+  const notified = await Notify.sendAll('manual');
   if (notified === 0) alert('本日の通知はありません。');
 }
 
@@ -4610,61 +4716,7 @@ async function autoCheckDeadlines() {
 
   await new Promise(r => setTimeout(r, 2000));
 
-  const now = new Date();
-  const dow = now.getDay();
-  let notifItems = [];
-
-  // ── 当日の時間割
-  const { year: cY, term: cT } = getSelectedSemester();
-  const todayClasses = classes
-    .filter(c => c.notif !== false)
-    .filter(c => !isNaN(cY) ? (c.year===cY && c.term===cT) : true)
-    .filter(c => {
-      const jsDow = (c.day + 1) % 7; // c.day: 0=月→JS1, ... 5=土→JS6, 6=日→JS0
-      return jsDow === dow;
-    })
-    .sort((a,b) => a.period - b.period);
-  if (todayClasses.length > 0) {
-    const body = todayClasses.map(c => `${c.period+1}限: ${c.name}${c.room?' ('+c.room+')':''}`).join('\n');
-    await sendNotification('📚 今日の時間割', body, 'auto-classes');
-  }
-
-  // ── 当日の予定 (calEvents)
-  const td = TODAY;
-  const todayEvs = calEvents.filter(e => e.dates.includes(td) && e.notif !== false);
-  if (todayEvs.length > 0) {
-    const body = todayEvs.map(e => {
-      const timeLbl = (!e.noTime && e.sh != null) ? `${e.sh}:${String(e.sm).padStart(2,'0')} ` : '';
-      return `・${timeLbl}${e.name}`;
-    }).join('\n');
-    await sendNotification(`📅 今日の予定 (${todayEvs.length}件)`, body, 'auto-events');
-  }
-
-  // ── 繰り返しタスク（本日が対象日）
-  const todayRTs = recurringTasks.filter(rt => !isCompletedNow(rt) && isRecurDueToday(rt) && rt.notif !== false);
-  if (todayRTs.length > 0) {
-    const body = todayRTs.map(t => `・${t.name}`).join('\n');
-    await sendNotification(`🔁 本日の習慣タスク (${todayRTs.length}件)`, body, 'auto-rt');
-  }
-
-  // ── 通常タスク: 今日〜3日以内 + 期限超過（超過初日のみ）
-  const pending = tasks.filter(t => !t.done && t.due && t.notif !== false);
-  const urgent  = pending.filter(t => daysUntil(t.due) >= 0 && daysUntil(t.due) <= 1);
-  const soon    = pending.filter(t => daysUntil(t.due) >= 2 && daysUntil(t.due) <= 3);
-  const overdue = pending.filter(t => daysUntil(t.due) === -1);
-
-  if (urgent.length > 0) {
-    const body = urgent.map(t => `・${t.name} (${daysUntil(t.due)===0?'今日':'明日'})`).join('\n');
-    await sendNotification(`⚠️ 締め切りが近いタスク (${urgent.length}件)`, body, 'auto-urgent');
-  }
-  if (soon.length > 0) {
-    const body = soon.map(t => `・${t.name} (${daysUntil(t.due)}日後)`).join('\n');
-    await sendNotification(`📋 締め切りが近いタスク (${soon.length}件)`, body, 'auto-soon');
-  }
-  if (overdue.length > 0) {
-    const body = overdue.map(t => `・${t.name}`).join('\n');
-    await sendNotification(`🚨 期限超過タスク (${overdue.length}件)`, body, 'auto-overdue');
-  }
+  await Notify.sendAll('auto');
 }
 
 // ── DOWNLOAD WITH EMBEDDED DATA ──
@@ -4785,22 +4837,22 @@ function confirmLoadEmbedded() {
 }
 
 function applyDataPayload(data) {
-  if (Array.isArray(data.tasks))          { tasks = data.tasks; sto.set('tasks', tasks); }
-  if (Array.isArray(data.recurringTasks)) { recurringTasks = data.recurringTasks; sto.set('recurringTasks', recurringTasks); }
-  if (Array.isArray(data.classes))        { classes = data.classes; sto.set('classes', classes); }
-  if (Array.isArray(data.attendance))     { attendance = data.attendance; sto.set('attendance', attendance); }
-  if (Array.isArray(data.grades))         { grades = data.grades; sto.set('grades', grades); }
+  if (Array.isArray(data.tasks))          { tasks = data.tasks; Store.tasks(); }
+  if (Array.isArray(data.recurringTasks)) { recurringTasks = data.recurringTasks; Store.recurring(); }
+  if (Array.isArray(data.classes))        { classes = data.classes; Store.classes(); }
+  if (Array.isArray(data.attendance))     { attendance = data.attendance; Store.attendance(); }
+  if (Array.isArray(data.grades))         { grades = data.grades; Store.grades(); }
   if (data.sessionCounts && typeof data.sessionCounts === 'object') {
-    sessionCounts = data.sessionCounts; sto.set('sessionCounts', sessionCounts);
+    sessionCounts = data.sessionCounts; Store.sessions();
   }
   if (Array.isArray(data.periodSettings) && data.periodSettings.length === 7) {
-    periodSettings = data.periodSettings; sto.set('periodSettings', periodSettings);
+    periodSettings = data.periodSettings; Store.period();
   }
   if (typeof data.absLimitCount === 'number' && data.absLimitCount >= 1) {
-    absLimitCount = data.absLimitCount; sto.set('absLimitCount', absLimitCount);
+    absLimitCount = data.absLimitCount; Store.absLimit();
   }
   if (Array.isArray(data.deletionHistory)) {
-    deletionHistory = data.deletionHistory; sto.set('deletionHistory', deletionHistory);
+    deletionHistory = data.deletionHistory; Store.history();
   }
 }
 
@@ -4852,12 +4904,12 @@ function importData(event) {
     try {
       const data = JSON.parse(e.target.result);
       if (!confirm(`バックアップを復元しますか？\n現在のデータはすべて上書きされます。\n\nエクスポート日時: ${data.exportedAt||'不明'}`)) return;
-      if (Array.isArray(data.tasks)) { tasks=data.tasks; sto.set('tasks',tasks); }
-      if (Array.isArray(data.recurringTasks)) { recurringTasks=data.recurringTasks; sto.set('recurringTasks',recurringTasks); }
-      if (Array.isArray(data.classes)) { classes=data.classes; sto.set('classes',classes); }
-      if (Array.isArray(data.attendance)) { attendance=data.attendance; sto.set('attendance',attendance); }
-      if (Array.isArray(data.grades)) { grades=data.grades; sto.set('grades',grades); }
-      if (data.sessionCounts && typeof data.sessionCounts==='object') { sessionCounts=data.sessionCounts; sto.set('sessionCounts',sessionCounts); }
+      if (Array.isArray(data.tasks)) { tasks=data.tasks; Store.tasks(); }
+      if (Array.isArray(data.recurringTasks)) { recurringTasks=data.recurringTasks; Store.recurring(); }
+      if (Array.isArray(data.classes)) { classes=data.classes; Store.classes(); }
+      if (Array.isArray(data.attendance)) { attendance=data.attendance; Store.attendance(); }
+      if (Array.isArray(data.grades)) { grades=data.grades; Store.grades(); }
+      if (data.sessionCounts && typeof data.sessionCounts==='object') { sessionCounts=data.sessionCounts; Store.sessions(); }
       alert('インポートが完了しました！');
       closeSettings();
       showPage('dashboard', null);
@@ -4901,19 +4953,19 @@ function restoreItem(hid) {
       if (!confirm('同じ時間帯に既に授業が登録されています。別の場所として復元しますか？')) return;
       h.data.id = Date.now();
     }
-    classes.push(h.data); sto.set('classes', classes);
+    classes.push(h.data); Store.classes();
     renderTimetable();
   } else if (h.type === 'task') {
     if (tasks.find(t => t.id === h.data.id)) h.data.id = Date.now();
-    tasks.push(h.data); sto.set('tasks', tasks);
+    tasks.push(h.data); Store.tasks();
     renderTasks(); renderDashboard();
   } else if (h.type === 'recurringTask') {
     if (recurringTasks.find(r => r.id === h.data.id)) h.data.id = Date.now();
-    recurringTasks.push(h.data); sto.set('recurringTasks', recurringTasks);
+    recurringTasks.push(h.data); Store.recurring();
     renderTasks(); renderDashboard();
   }
   deletionHistory.splice(idx, 1);
-  sto.set('deletionHistory', deletionHistory);
+  Store.history();
   renderDeletionHistory();
   alert('✅ 復元しました');
 }
@@ -4922,7 +4974,7 @@ function clearDeletionHistory() {
   if (!deletionHistory.length) { alert('削除履歴はありません'); return; }
   if (!confirm(`削除履歴（${deletionHistory.length}件）をすべて消去しますか？`)) return;
   deletionHistory = [];
-  sto.set('deletionHistory', deletionHistory);
+  Store.history();
   renderDeletionHistory();
 }
 
@@ -4976,7 +5028,7 @@ function renderBuiltInCatNav() {
 function deleteBuiltInCat(name) {
   if (!hiddenBuiltInCats.includes(name)) {
     hiddenBuiltInCats.push(name);
-    sto.set('hiddenBuiltInCats', hiddenBuiltInCats);
+    Store.hiddenCats();
   }
   renderBuiltInCatNav();
   renderAllCatSelects();
@@ -5014,7 +5066,7 @@ function addCustomCategory() {
   if (allNames.includes(name)) { alert('同じ名前のカテゴリが既に存在します'); return; }
   if (name.length > 20) { alert('カテゴリ名は20文字以内にしてください'); return; }
   customCategories.push({id: Date.now(), name, color: selectedCatColor});
-  sto.set('customCats', customCategories);
+  Store.cats();
   nameEl.value = '';
   renderCustomCatList();
   renderSidebarCustomCats();
@@ -5023,7 +5075,7 @@ function addCustomCategory() {
 function deleteCustomCategory(id) {
   if (!confirm('このカテゴリを削除しますか？\n（既存タスクのカテゴリは変更されません）')) return;
   customCategories = customCategories.filter(c=>c.id!==id);
-  sto.set('customCats', customCategories);
+  Store.cats();
   renderCustomCatList();
   renderSidebarCustomCats();
   renderAllCatSelects();

@@ -2258,8 +2258,8 @@ function renderDashboard() {
         return `<div class="dh-item">
           <div class="dh-check${done?' checked':''}" onclick="dashToggleRecurring(${rt.id})"></div>
           <div class="dh-info" style="cursor:pointer" onclick="openEditRecurring(${rt.id})">
-            <div class="dh-name${done?' done':''}">${rt.name}</div>
-            <div class="dh-badge">${getRecurLabel(rt)}${rt.subj?' · '+rt.subj:''}</div>
+            <div class="dh-name${done?' done':''}">${esc(rt.name)}</div>
+            <div class="dh-badge">${getRecurLabel(rt)}${rt.subj?' · '+esc(rt.subj):''}</div>
           </div>
         </div>`;
       }).join('')}
@@ -2274,7 +2274,7 @@ function renderDashboard() {
         const lim = c.absLimit ?? absLimitCount;
         const absWarnCls = absCount >= lim ? 'color:var(--red)' : absCount >= lim-1 ? 'color:var(--orange)' : 'color:var(--text2)';
         return `<div class="tl-item" style="border-left-color:${c.color};cursor:pointer" onclick="openClassFromDash(${c.id})">
-          <div class="tl-date">${periodSettings[c.period]||''}</div>
+          <div class="tl-date">${esc(periodSettings[c.period]||'')}</div>
           <div style="flex:1"><div class="tl-title">${esc(c.name)}</div>
             <div class="tl-sub">${esc(c.room||'')} ${c.teacher?'· '+esc(c.teacher):''}
               ${absCount>0?`<span style="${absWarnCls};font-size:10px"> 欠席${absCount}/${lim}回</span>`:''}
@@ -2675,7 +2675,7 @@ function buildClassTaskSectionHtml(cls) {
           ${done?'✓':''}
         </button>
         <div class="class-task-body">
-          <div class="class-task-name${done?' done':''}">${rt.name}</div>
+          <div class="class-task-name${done?' done':''}">${esc(rt.name)}</div>
           <div class="class-task-meta">
             <span class="class-task-cat recur">${label}</span>
             ${streak>0?`<span class="class-task-streak">🔥${streak}</span>`:''}

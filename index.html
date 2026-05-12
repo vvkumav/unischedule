@@ -470,10 +470,10 @@
   .mobile-url-row{display:flex;gap:6px;margin-bottom:6px}
   .mobile-url-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:12px;outline:none;font-family:monospace}
   .mobile-url-note{font-size:11px;color:var(--text2);line-height:1.5}
-  .period-time-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:6px 0 2px}
-  .period-time-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:8px}
-  .period-time-label{font-size:12px;font-weight:600;color:var(--text2);min-width:28px}
-  .period-time-input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;min-width:0}
+  .period-time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px 0 2px}
+  .period-time-row{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;background:var(--surface2);border-radius:8px;text-align:center}
+  .period-time-label{font-size:11px;font-weight:700;color:var(--text2)}
+  .period-time-input{background:transparent;border:none;border-top:1px solid var(--border);color:var(--text);font-size:13px;outline:none;width:100%;text-align:center;padding:4px 2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .heatmap-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px}
   .hm-legend{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:10px;color:var(--text2)}
   /* ── improved heatmap (hm2) ── */
@@ -4035,7 +4035,7 @@ function renderPeriodTimeInputs() {
   el.innerHTML = periodSettings.map((t,i)=>`
     <div class="period-time-row">
       <div class="period-time-label">${i+1}限</div>
-      <input class="period-time-input" id="pt_${i}" type="text" value="${t}" placeholder="例: 8:45">
+      <input class="period-time-input" id="pt_${i}" type="text" value="${t}" placeholder="8:45" title="${t}">
     </div>`).join('');
 }
 function saveAbsLimit() {

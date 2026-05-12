@@ -2116,6 +2116,24 @@ const Validate = {
   minutes: m => Number.isFinite(m) && m >= 0 && m <= 1440,
 };
 
+// ── MODAL ── 全モーダル開閉の共通ヘルパー
+const Modal = {
+  open:  id => document.getElementById(id)?.classList.add('show'),
+  close: id => document.getElementById(id)?.classList.remove('show'),
+};
+
+// ── UPSERT ── 配列への追加・上書き共通ヘルパー
+function upsert(arr, id, obj) {
+  if (!id) { arr.push(obj); return; }
+  const idx = arr.findIndex(x => x.id === id);
+  if (idx >= 0) arr[idx] = obj; else arr.push(obj);
+}
+
+// ── RENDER ── 複合再描画ヘルパー
+const Render = {
+  afterTaskChange() { renderTasks(); renderDashboard(); },
+};
+
 let tasks = sto.get('tasks',[]);
 let recurringTasks = sto.get('recurringTasks',[]);
 let classes = sto.get('classes',[]);
@@ -2558,7 +2576,7 @@ function dashToggleRecurring(id) {
     document.getElementById('tm_minutes').value = '';
     const memoEl = document.getElementById('tm_memo'); if(memoEl) memoEl.value = '';
     document.querySelectorAll('.time-preset').forEach(b=>b.classList.remove('sel'));
-    document.getElementById('timeModal').classList.add('show');
+    Modal.open('timeModal');
   }
 }
 
@@ -2904,10 +2922,10 @@ function openEditMemo(rtId, dateStr) {
   _editMemoDate = dateStr;
   document.getElementById('em_dateLabel').textContent = fmtDateFull(dateStr) + (comp.minutes ? `　⏱${fmtMin(comp.minutes)}` : '');
   document.getElementById('em_memo').value = comp.memo || '';
-  document.getElementById('editMemoModal').classList.add('show');
+  Modal.open('editMemoModal');
 }
 function closeEditMemoModal() {
-  document.getElementById('editMemoModal').classList.remove('show');
+  Modal.close('editMemoModal');
   _editMemoRtId = null;
   _editMemoDate = null;
 }
@@ -2991,10 +3009,10 @@ function openGradeModal(preClassId) {
   document.getElementById('g_type').value = 'exam';
   document.getElementById('g_date').value = TODAY;
   document.getElementById('g_note').value = '';
-  document.getElementById('gradeModal').classList.add('show');
+  Modal.open('gradeModal');
 }
 
-function closeGradeModal() { document.getElementById('gradeModal').classList.remove('show'); }
+function closeGradeModal() { Modal.close('gradeModal'); }
 
 function saveGrade() {
   const score = parseFloat(document.getElementById('g_score').value);
@@ -3160,7 +3178,7 @@ function toggleTask(id) {
 function deleteTask(id) {
   const t = tasks.find(x=>x.id===id);
   if (t) pushHistory('task', t);
-  tasks=tasks.filter(t=>t.id!==id); Store.tasks(); renderTasks(); renderDashboard();
+  tasks=tasks.filter(t=>t.id!==id); Store.tasks(); Render.afterTaskChange();
 }
 function toggleRecurring(id) {
   const rt=recurringTasks.find(r=>r.id===id);
@@ -3171,7 +3189,7 @@ function toggleRecurring(id) {
     else if(rt.recurrence==='monthly') rt.completions=rt.completions.filter(c=>getMonthKey(c.date)!==THIS_MONTH);
     else if(rt.recurrence==='yearly')  rt.completions=rt.completions.filter(c=>getYearKey(c.date)!==THIS_YEAR);
     Store.recurring();
-    renderTasks(); renderDashboard();
+    Render.afterTaskChange();
   } else {
     openTimeModal(id);
   }
@@ -3182,7 +3200,7 @@ function deleteRecurring(id) {
   if (rt) pushHistory('recurringTask', rt);
   recurringTasks=recurringTasks.filter(r=>r.id!==id);
   Store.recurring();
-  renderTasks(); renderDashboard();
+  Render.afterTaskChange();
 }
 
 // ── TASK EDITING ──
@@ -3206,7 +3224,7 @@ function openEditTask(id) {
   setNotifBtn('t_notif', t.notif !== false);
   openFormDetail('taskDetail');
   onRecurChange();
-  document.getElementById('taskModal').classList.add('show');
+  Modal.open('taskModal');
 }
 
 function openEditRecurring(id) {
@@ -3244,7 +3262,7 @@ function openEditRecurring(id) {
   }
   setNotifBtn('t_notif', rt.notif !== false);
   openFormDetail('taskDetail');
-  document.getElementById('taskModal').classList.add('show');
+  Modal.open('taskModal');
 }
 
 // ── STATS ──
@@ -3438,10 +3456,10 @@ function openDayAction(ds) {
   const dow = ['日','月','火','水','木','金','土'][d.getDay()];
   const m = d.getMonth()+1, day = d.getDate();
   document.getElementById('dayActionTitle').textContent = `${d.getFullYear()}年${m}月${day}日（${dow}）`;
-  document.getElementById('dayActionModal').classList.add('show');
+  Modal.open('dayActionModal');
 }
 function closeDayAction() {
-  document.getElementById('dayActionModal').classList.remove('show');
+  Modal.close('dayActionModal');
 }
 
 // ── TASK with date ──
@@ -3601,10 +3619,10 @@ function openCalEventModal(defaultDate, editId) {
   }
   renderEvMiniCal();
   renderEvDateChips();
-  document.getElementById('calEventModal').classList.add('show');
+  Modal.open('calEventModal');
 }
 function closeCalEventModal() {
-  document.getElementById('calEventModal').classList.remove('show');
+  Modal.close('calEventModal');
   hideEvNameSuggest();
 }
 
@@ -3676,12 +3694,7 @@ function saveCalEvent() {
     notif: getNotifBtn('ev_notif'),
   };
   if (!Validate.calEvent(ev)) console.warn('[Validate] calEvent failed validation:', ev);
-  if (_editEvId) {
-    const idx = calEvents.findIndex(e=>e.id===_editEvId);
-    if (idx>=0) calEvents[idx]=ev;
-  } else {
-    calEvents.push(ev);
-  }
+  upsert(calEvents, _editEvId, ev);
   Store.calEvents();
   closeCalEventModal();
   renderCalendar();
@@ -3690,7 +3703,7 @@ function deleteCalEvent(id) {
   if (!confirm('この予定を削除しますか？')) return;
   calEvents = calEvents.filter(e=>e.id!==id);
   Store.calEvents();
-  document.getElementById('calEventDetailModal')?.classList.remove('show');
+  Modal.close('calEventDetailModal');
   renderCalendar();
 }
 function openCalEventDetail(id) {
@@ -3707,11 +3720,11 @@ function openCalEventDetail(id) {
     <div style="font-size:13px;color:var(--text2);margin-bottom:${ev.memo?'6px':'0'}">🕐 ${timeStr}</div>
     ${ev.memo?`<div style="font-size:13px;background:var(--surface2);border-radius:8px;padding:10px;margin-top:8px">${ev.memo}</div>`:''}
     <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn-cancel" style="flex:1" onclick="document.getElementById('calEventDetailModal').classList.remove('show')">閉じる</button>
-      <button class="ev-edit-del" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px" onclick="document.getElementById('calEventDetailModal').classList.remove('show');openCalEventModal(null,${ev.id})">🖊️ 編集</button>
+      <button class="btn-cancel" style="flex:1" onclick="Modal.close('calEventDetailModal')">閉じる</button>
+      <button class="ev-edit-del" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px" onclick="Modal.close('calEventDetailModal');openCalEventModal(null,${ev.id})">🖊️ 編集</button>
       <button class="ev-edit-del" style="flex:1;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:8px" onclick="deleteCalEvent(${ev.id})">🗑 削除</button>
     </div>`;
-  document.getElementById('calEventDetailModal').classList.add('show');
+  Modal.open('calEventDetailModal');
 }
 
 function changeMonth(dir){
@@ -3751,11 +3764,11 @@ function openTaskDetail(id) {
       <button class="td-btn td-btn-del" onclick="if(confirm('このタスクを削除しますか？')){deleteTask(${t.id});closeTaskDetail();renderCalendar()}">🗑 削除</button>
     </div>
   `;
-  document.getElementById('taskDetailModal').classList.add('show');
+  Modal.open('taskDetailModal');
 }
 
 function closeTaskDetail() {
-  document.getElementById('taskDetailModal').classList.remove('show');
+  Modal.close('taskDetailModal');
 }
 
 // ── UPCOMING ──
@@ -3898,7 +3911,7 @@ function openAddTask() {
   setNotifBtn('t_notif', true);
   closeFormDetail('taskDetail');
   onRecurChange();
-  document.getElementById('taskModal').classList.add('show');
+  Modal.open('taskModal');
 }
 
 function openAddTaskForClass(classId) {
@@ -3965,7 +3978,7 @@ function selectSubjSuggest(classId, which) {
   hideSubjSuggest(which);
 }
 
-function closeTaskModal(){document.getElementById('taskModal').classList.remove('show');hideSubjSuggest('normal');hideSubjSuggest('recur');}
+function closeTaskModal(){Modal.close('taskModal');hideSubjSuggest('normal');hideSubjSuggest('recur');}
 
 function toggleNotifBtn(id) {
   const btn = document.getElementById(id);
@@ -4024,20 +4037,18 @@ function saveTask() {
         if (!isNaN(ym)) rt.yearMonth = ym;
         if (!isNaN(yd) && yd >= 1 && yd <= 31) rt.yearDay = yd;
       }
-      if(editTaskId){
-        const idx=recurringTasks.findIndex(x=>x.id===editTaskId);
-        if(idx>=0){rt.completions=recurringTasks[idx].completions;recurringTasks[idx]=rt;}
-        else recurringTasks.push(rt);
-      } else recurringTasks.push(rt);
+      // 既存のcompletions履歴を引き継ぐ
+      const existing = editTaskId ? recurringTasks.find(x=>x.id===editTaskId) : null;
+      if (existing) rt.completions = existing.completions;
+      upsert(recurringTasks, editTaskId, rt);
       Store.recurring();
     } else {
       const t={id:editTaskId||Date.now(),name,cat,pri,due,subj,classId:classId||null,note,notif,done:false};
       if (!Validate.task(t)) console.warn('[Validate] task failed validation:', t);
-      if(editTaskId){
-        const idx=tasks.findIndex(x=>x.id===editTaskId);
-        if(idx>=0){t.done=tasks[idx].done;tasks[idx]=t;}
-        else tasks.push(t);
-      } else tasks.push(t);
+      // 既存のdone状態を引き継ぐ
+      const existing = editTaskId ? tasks.find(x=>x.id===editTaskId) : null;
+      if (existing) t.done = existing.done;
+      upsert(tasks, editTaskId, t);
       Store.tasks();
     }
   } catch(e) { console.error('タスク保存エラー:', e); }
@@ -4056,9 +4067,9 @@ function openTimeModal(id) {
   document.getElementById('tm_minutes').value='';
   const memoEl=document.getElementById('tm_memo'); if(memoEl) memoEl.value='';
   document.querySelectorAll('.time-preset').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('timeModal').classList.add('show');
+  Modal.open('timeModal');
 }
-function closeTimeModal(){document.getElementById('timeModal').classList.remove('show')}
+function closeTimeModal(){Modal.close('timeModal')}
 function setPreset(m){
   document.getElementById('tm_minutes').value=m;
   document.querySelectorAll('.time-preset').forEach(b=>{
@@ -4084,7 +4095,7 @@ function saveTime(skip=false) {
   } catch(e) { console.error('時間記録保存エラー:', e); }
   const activePage=document.querySelector('.page.active')?.id;
   if(activePage==='page-stats') renderStats();
-  else { renderTasks(); renderDashboard(); }
+  else { Render.afterTaskChange(); }
   // 出席詳細パネルが開いていれば再描画
   refreshAttDetailPanel();
 }
@@ -4170,7 +4181,7 @@ function openEditClass(id) {
   renderSwatches();
   setNotifBtn('c_notif', cls.notif !== false);
   openFormDetail('classDetail');
-  document.getElementById('classModal').classList.add('show');
+  Modal.open('classModal');
 }
 function openAddClass() {
   editClassId = null;
@@ -4182,7 +4193,7 @@ function openAddClass() {
   selectedColor=CLASS_COLORS[0]; renderSwatches();
   setNotifBtn('c_notif', true);
   closeFormDetail('classDetail');
-  document.getElementById('classModal').classList.add('show');
+  Modal.open('classModal');
 }
 function openAddClassAt(day,period) {
   openAddClass();
@@ -4199,7 +4210,7 @@ function openClassFromDash(id) {
   showPage('timetable', btn);
   switchTTTab('att');
 }
-function closeClassModal(){document.getElementById('classModal').classList.remove('show')}
+function closeClassModal(){Modal.close('classModal')}
 function saveClass() {
   const name=document.getElementById('c_name').value.trim();
   if(!name){alert('授業名を入力してください');return;}
@@ -4223,12 +4234,7 @@ function saveClass() {
     if(!confirm('この時間には既に授業があります。上書きしますか？'))return;
     classes=classes.filter(x=>!(x.day===c.day&&x.period===c.period));
   }
-  if(editClassId){
-    const idx=classes.findIndex(x=>x.id===editClassId);
-    if(idx>=0) classes[idx]=c; else classes.push(c);
-  } else {
-    classes.push(c);
-  }
+  upsert(classes, editClassId, c);
   Store.classes(); closeClassModal(); buildSemesterSelect(); renderTimetable();
 }
 function renderSwatches() {
@@ -4307,12 +4313,12 @@ let _scanInterval = null;
 let _barcodeDetector = null;
 
 function openTransferModal(tab) {
-  document.getElementById('transferModal').classList.add('show');
+  Modal.open('transferModal');
   switchTransferTab(tab || 'export');
 }
 function closeTransferModal() {
   stopQRScan();
-  document.getElementById('transferModal').classList.remove('show');
+  Modal.close('transferModal');
 }
 function switchTransferTab(tab) {
   document.getElementById('xfer-export').style.display = tab === 'export' ? '' : 'none';
@@ -4499,7 +4505,6 @@ function copyMobileUrl() {
   navigator.clipboard?.writeText(v).then(()=>alert('コピーしました')).catch(()=>{});
 }
 function openMobileQR() {
-  const modal = document.getElementById('mobileQRModal');
   const canvas = document.getElementById('mobileQRCanvas');
   const urlEl = document.getElementById('mobileQRUrl');
   const url = getPublicUrl();
@@ -4518,10 +4523,10 @@ function openMobileQR() {
       }
     }, 800);
   }
-  modal.classList.add('show');
+  Modal.open('mobileQRModal');
 }
 function closeMobileQR() {
-  document.getElementById('mobileQRModal').classList.remove('show');
+  Modal.close('mobileQRModal');
 }
 function copyMobileQRUrl() {
   const url = getPublicUrl();
@@ -4542,11 +4547,11 @@ function openSettings() {
   const raw = getPublicUrl();
   const input = document.getElementById('mobileUrlInput');
   if (input) input.value = raw;
-  document.getElementById('settingsModal').classList.add('show');
+  Modal.open('settingsModal');
   settingsTab(0);
   setTimeout(updateQR, 100);
 }
-function closeSettings(){document.getElementById('settingsModal').classList.remove('show')}
+function closeSettings(){Modal.close('settingsModal')}
 
 // ── ADD MENU (header ＋ button dropdown) ──
 function toggleAddMenu(e) {
@@ -4958,11 +4963,11 @@ function restoreItem(hid) {
   } else if (h.type === 'task') {
     if (tasks.find(t => t.id === h.data.id)) h.data.id = Date.now();
     tasks.push(h.data); Store.tasks();
-    renderTasks(); renderDashboard();
+    Render.afterTaskChange();
   } else if (h.type === 'recurringTask') {
     if (recurringTasks.find(r => r.id === h.data.id)) h.data.id = Date.now();
     recurringTasks.push(h.data); Store.recurring();
-    renderTasks(); renderDashboard();
+    Render.afterTaskChange();
   }
   deletionHistory.splice(idx, 1);
   Store.history();
@@ -5109,11 +5114,11 @@ renderSidebarCustomCats();
 renderAllCatSelects();
 // ── HELP ──
 function openHelp(tabIdx=0) {
-  document.getElementById('helpModal').classList.add('show');
+  Modal.open('helpModal');
   helpTab(tabIdx);
 }
 function closeHelp() {
-  document.getElementById('helpModal').classList.remove('show');
+  Modal.close('helpModal');
 }
 function helpTab(i) {
   document.querySelectorAll('.help-tab').forEach((t,j)=>t.classList.toggle('act',j===i));

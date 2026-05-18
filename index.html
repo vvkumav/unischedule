@@ -2466,6 +2466,7 @@ function renderDashboard() {
         const absCount = attendance.filter(a=>a.classId===c.id).length;
         const lim = c.absLimit ?? absLimitCount;
         const absWarnCls = absCount >= lim ? 'color:var(--red)' : absCount >= lim-1 ? 'color:var(--orange)' : 'color:var(--text2)';
+        const attended = sto.get('attendanceDates',{})[c.id] === TODAY;
         return `<div class="tl-item" style="border-left-color:${c.color};cursor:pointer" onclick="openClassFromDash(${c.id})">
           <div class="tl-date">${esc(periodSettings[c.period]||'')}</div>
           <div style="flex:1"><div class="tl-title">${esc(c.name)}</div>
@@ -2474,6 +2475,11 @@ function renderDashboard() {
             </div>
             ${c.url?`<a href="${safeUrl(c.url)}" target="_blank" style="font-size:10px;color:var(--accent2)">🔗 リンク</a>`:''}
           </div>
+          <button onclick="event.stopPropagation();markClassAttended(${c.id})"
+            style="margin-left:8px;flex-shrink:0;padding:5px 11px;border-radius:20px;border:1.5px solid ${attended?'var(--green)':'var(--border)'};background:${attended?'var(--green)22':'transparent'};color:${attended?'var(--green)':'var(--text2)'};font-size:11px;cursor:${attended?'default':'pointer'};font-weight:600"
+            ${attended?'disabled':''}>
+            ${attended?'✓ 出席済':'出席'}
+          </button>
         </div>`;
       }).join('');
 
@@ -2656,6 +2662,21 @@ function updateSessionsHeld(classId, delta) {
   const cur = sessionCounts[classId] || 0;
   sessionCounts[classId] = Math.min(max, Math.max(0, cur + delta));
   Store.sessions();
+  refreshAttDetail();
+}
+
+function markClassAttended(classId) {
+  const datesKey = 'attendanceDates';
+  const dates = sto.get(datesKey, {});
+  if (dates[classId] === TODAY) return; // 本日分は既にカウント済み
+  dates[classId] = TODAY;
+  sto.set(datesKey, dates);
+  const cls = classes.find(c => c.id === classId);
+  const max = cls ? (cls.totalSessions || 15) : 15;
+  const cur = sessionCounts[classId] || 0;
+  sessionCounts[classId] = Math.min(max, cur + 1);
+  Store.sessions();
+  renderDashboard();
   refreshAttDetail();
 }
 
@@ -3443,7 +3464,12 @@ function renderCalendar() {
       const timeLbl=(!e.noTime&&e.sh!=null)?` ${e.sh}:${String(e.sm).padStart(2,'0')}`:'' ;
       return `<div class="cal-event-item" style="background:${e.color}22;color:${e.color};border-left:2px solid ${e.color}" onclick="event.stopPropagation();openCalEventDetail(${e.id})">${timeLbl?timeLbl+' ':''}${esc(e.name)}</div>`;
     }).join('');
-    html+=`<div class="cal-day ${ds===td?'today':''}" onclick="openDayAction('${ds}')"><div class="cal-dn">${d}</div>${taskEvts}${calEvts}</div>`;
+    const recurEvts=recurringTasks.filter(rt=>isRecurDueOnDate(rt,ds)).map(rt=>{
+      const col=catColor(rt.cat);
+      const done=rt.completions?.some(c=>c.date===ds);
+      return `<div class="cal-event" style="background:${col}22;color:${col};opacity:${done?0.5:1};border-left:2px solid ${col}" onclick="event.stopPropagation();openEditRecurring(${rt.id})">🔁 ${esc(rt.name)}</div>`;
+    }).join('');
+    html+=`<div class="cal-day ${ds===td?'today':''}" onclick="openDayAction('${ds}')"><div class="cal-dn">${d}</div>${taskEvts}${calEvts}${recurEvts}</div>`;
   }
   const rem=Math.ceil((startDow+last.getDate())/7)*7-(startDow+last.getDate());
   for(let i=0;i<rem;i++)html+=`<div class="cal-day other-month"></div>`;
@@ -3714,11 +3740,11 @@ function openCalEventDetail(id) {
   document.getElementById('calEvDetailContent').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <span style="width:14px;height:14px;border-radius:50%;background:${ev.color};flex-shrink:0;display:inline-block"></span>
-      <span style="font-size:17px;font-weight:700">${ev.name}</span>
+      <span style="font-size:17px;font-weight:700">${esc(ev.name)}</span>
     </div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:6px">📅 ${dateStr}</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:${ev.memo?'6px':'0'}">🕐 ${timeStr}</div>
-    ${ev.memo?`<div style="font-size:13px;background:var(--surface2);border-radius:8px;padding:10px;margin-top:8px">${ev.memo}</div>`:''}
+    ${ev.memo?`<div style="font-size:13px;background:var(--surface2);border-radius:8px;padding:10px;margin-top:8px">${esc(ev.memo)}</div>`:''}
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn-cancel" style="flex:1" onclick="Modal.close('calEventDetailModal')">閉じる</button>
       <button class="ev-edit-del" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px" onclick="Modal.close('calEventDetailModal');openCalEventModal(null,${ev.id})">🖊️ 編集</button>
@@ -4235,7 +4261,8 @@ function saveClass() {
     classes=classes.filter(x=>!(x.day===c.day&&x.period===c.period));
   }
   upsert(classes, editClassId, c);
-  Store.classes(); closeClassModal(); buildSemesterSelect(); renderTimetable();
+  if (editClassId) currentAttClass = editClassId;
+  Store.classes(); closeClassModal(); buildSemesterSelect(); renderTimetable(); renderAttendance();
 }
 function renderSwatches() {
   document.getElementById('colorSwatches').innerHTML=CLASS_COLORS.map(c=>
@@ -4671,20 +4698,20 @@ async function checkDeadlinesNow() {
   if (notified === 0) alert('本日の通知はありません。');
 }
 
-function isRecurDueToday(rt) {
-  const now = new Date();
-  const dow = now.getDay(); // 0=日,1=月,...,6=土
-  const dom = now.getDate();
-  const month = now.getMonth() + 1;
+function isRecurDueOnDate(rt, dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const dow   = d.getDay();
+  const dom   = d.getDate();
+  const month = d.getMonth() + 1;
+  const year  = d.getFullYear();
   const recur = rt.recurrence;
   if (recur === 'daily') return true;
   if (recur === 'weekly') {
-    // rt.days: array of JS dow (0=日...)
     return rt.days && rt.days.includes(dow);
   }
   if (recur === 'monthly') {
     if (rt.lastDay) {
-      const last = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+      const last = new Date(year, d.getMonth()+1, 0).getDate();
       return dom === last;
     }
     return dom === (rt.monthDay || 1);
@@ -4694,6 +4721,7 @@ function isRecurDueToday(rt) {
   }
   return false;
 }
+function isRecurDueToday(rt) { return isRecurDueOnDate(rt, TODAY); }
 
 /* ── 四季テーマ ── */
 function getSeason() {
@@ -5023,10 +5051,10 @@ function renderBuiltInCatNav() {
   if (!el) return;
   el.innerHTML = getActiveBuiltInCats().map(c =>
     `<div class="nav-cat-row">
-      <button class="nav-item" onclick="filterPage('${c.name}')">
+      <button class="nav-item" onclick="filterPage(${JSON.stringify(c.name)})">
         <span class="nav-dot" style="background:${c.color}"></span>${c.label}
       </button>
-      <button class="nav-cat-del" onclick="deleteBuiltInCat('${c.name}')" title="非表示">×</button>
+      <button class="nav-cat-del" onclick="deleteBuiltInCat(${JSON.stringify(c.name)})" title="非表示">×</button>
     </div>`
   ).join('');
 }
@@ -5042,7 +5070,7 @@ function renderSidebarCustomCats() {
   const el = document.getElementById('navCustomCats');
   if (!el) return;
   el.innerHTML = customCategories.map(c=>`
-    <button class="nav-item" onclick="filterPage('${c.name.replace(/'/g,"\\'")}')">
+    <button class="nav-item" onclick="filterPage(${JSON.stringify(c.name)})">
       <span class="nav-dot" style="background:${c.color}"></span>${esc(c.name)}
     </button>`).join('');
 }

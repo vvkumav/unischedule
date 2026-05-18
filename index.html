@@ -2708,6 +2708,11 @@ function renderAttendance() {
     <div id="att-tabs-wrap">${buildAttTabsHtml()}</div>
     <div id="att-detail-panel" class="att-detail">${buildAttDetailHtml(cls)}</div>
   `;
+  // アクティブタブを横スクロールで中央に表示
+  setTimeout(() => {
+    document.querySelector('.att-class-tab.active')
+      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, 50);
 }
 
 function switchAttClass(classId) {
@@ -4707,10 +4712,10 @@ function isRecurDueOnDate(rt, dateStr) {
   const recur = rt.recurrence;
   if (recur === 'daily') return true;
   if (recur === 'weekly') {
-    return rt.days && rt.days.includes(dow);
+    return rt.weekDays && rt.weekDays.includes(dow);
   }
   if (recur === 'monthly') {
-    if (rt.lastDay) {
+    if (rt.monthDay === 0) {
       const last = new Date(year, d.getMonth()+1, 0).getDate();
       return dom === last;
     }
